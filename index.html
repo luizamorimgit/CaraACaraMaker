@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Cara a Cara Maker</title>
+
+
+    <!-- FONTE -->
+
+    <link
+        rel="preconnect"
+        href="https://fonts.googleapis.com"
+    >
+
+    <link
+        rel="preconnect"
+        href="https://fonts.googleapis.com"
+        crossorigin
+    >
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap"
+        rel="stylesheet"
+    >
+
+
+    <link
+        rel="stylesheet"
+        href="style.css"
+    >
+
+    <link
+        rel="manifest"
+        href="./manifest.json"
+    >
+
+    <meta
+        name="theme-color"
+        content="#808080"
+    >
+
+    <link
+        rel="apple-touch-icon"
+        href="./icon-192.png"
+    >
+
+</head>
+
+
+<body>
+
+
+    <!-- =====================================
+         BOLHAS
+    ====================================== -->
+
+    <div class="bubbles">
+
+        <span></span>
+        <span></span>
+        <span></span>
+        <span></span>
+        <span></span>
+        <span></span>
+
+    </div>
+
+
+    <!-- =====================================
+         TEMA
+    ====================================== -->
+
+    <button
+        id="themeToggle"
+        class="theme-button"
+    >
+        ☀
+    </button>
+
+
+    <!-- =====================================
+         INSTALAÇÃO
+    ====================================== -->
+
+    <button
+        id="installButton"
+        class="install-button"
+    >
+        ⇩ BAIXE
+    </button>
+
+
+    <!-- =====================================
+         LOBBY
+    ====================================== -->
+
+    <main
+        id="lobby"
+        class="screen active"
+    >
+
+        <h1>
+            Cara a Cara Maker
+        </h1>
+
+
+        <div class="player-options">
+
+            <button
+                onclick="createRoom()"
+            >
+                CRIAR SALA
+            </button>
+
+
+            <button
+                onclick="showJoinRoom()"
+            >
+                ENTRAR EM SALA
+            </button>
+
+        </div>
+
+
+        <div class="game-credits">
+
+            <span>
+                v2.0
+            </span>
+
+
+            <span>
+                Criado por luizamorimgit &amp; ChatGPT
+            </span>
+
+        </div>
+
+    </main>
+
+
+    <!-- =====================================
+         ENTRAR EM SALA
+    ====================================== -->
+
+    <main
+        id="joinRoom"
+        class="screen"
+    >
+
+        <h1 class="small-title">
+            ENTRAR EM SALA
+        </h1>
+
+
+        <h2>
+            DIGITE O CÓDIGO DA SALA
+        </h2>
+
+
+        <input
+            id="joinRoomCode"
+            class="room-input"
+            type="text"
+            maxlength="4"
+            minlength="4"
+            placeholder="ABCD"
+            autocomplete="off"
+        >
+
+
+        <div class="player-options">
+
+            <button
+                id="joinButton"
+                onclick="joinRoom()"
+            >
+                ENTRAR
+            </button>
+
+
+            <button
+                onclick="backToRoomChoice()"
+            >
+                VOLTAR
+            </button>
+
+        </div>
+
+    </main>
+
+
+    <!-- =====================================
+         SALA DE ESPERA
+    ====================================== -->
+
+    <main
+        id="waitingRoom"
+        class="screen"
+    >
+
+        <h1 class="small-title">
+            Cara a Cara Maker
+        </h1>
+
+
+        <div class="room-code">
+
+            CÓDIGO:
+
+            <strong id="waitingCode">
+                ----
+            </strong>
+
+        </div>
+
+
+        <h2>
+            JOGADORES NA SALA
+        </h2>
+
+
+        <div
+            id="playersList"
+            class="players-list"
+        ></div>
+
+
+        <p
+            id="waitingMessage"
+            class="waiting-message"
+        >
+            Aguardando outro jogador...
+        </p>
+
+
+        <button
+            class="ready-button"
+            onclick="leaveRoom()"
+        >
+            SAIR
+        </button>
+
+    </main>
+
+
+<!-- =====================================
+     CONFIGURAÇÃO DO TABULEIRO
+====================================== -->
+
+<main
+    id="setup"
+    class="screen"
+>
+
+    <!-- JOGADOR -->
+
+    <div
+        id="playerTitle"
+        class="player-title"
+    >
+        JOGADOR 1
+    </div>
+
+
+    <!-- TÍTULO DO TABULEIRO -->
+
+    <div
+        style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%;"
+    >
+
+        <h2
+            style="margin: 0; display: inline-block;"
+        >
+            SEU TABULEIRO
+        </h2>
+
+
+        <button
+            id="createSaveBoardButton"
+            class="game-icon-button"
+            title="Salvar ou Resgatar Tabuleiro"
+            style="cursor: pointer; background: transparent; border: none; font-size: 1.5rem; line-height: 1; padding: 0; margin: 0;"
+        >
+            💾
+        </button>
+
+    </div>
+
+
+    <!-- =================================
+         6 SLOTS DO TABULEIRO
+    ================================== -->
+
+    <div
+        id="imageGrid"
+        class="image-grid"
+    >
+
+        <!-- SLOT 1 -->
+
+        <label
+            class="image-slot"
+            data-position="0"
+            draggable="true"
+        >
+
+            <input
+                type="file"
+                accept="image/*"
+                multiple
+                onchange="loadImage(event, 0)"
+            >
+
+            <span>+</span>
+
+        </label>
+
+
+        <!-- SLOT 2 -->
+
+        <label
+            class="image-slot"
+            data-position="1"
+            draggable="true"
+        >
+
+            <input
+                type="file"
+                accept="image/*"
+                multiple
+                onchange="loadImage(event, 1)"
+            >
+
+            <span>+</span>
+
+        </label>
+
+
+        <!-- SLOT 3 -->
+
+        <label
+            class="image-slot"
+            data-position="2"
+            draggable="true"
+        >
+
+            <input
+                type="file"
+                accept="image/*"
+                multiple
+                onchange="loadImage(event, 2)"
+            >
+
+            <span>+</span>
+
+        </label>
+
+
+        <!-- SLOT 4 -->
+
+        <label
+            class="image-slot"
+            data-position="3"
+            draggable="true"
+        >
+
+            <input
+                type="file"
+                accept="image/*"
+                multiple
+                onchange="loadImage(event, 3)"
+            >
+
+            <span>+</span>
+
+        </label>
+
+
+        <!-- SLOT 5 -->
+
+        <label
+            class="image-slot"
+            data-position="4"
+            draggable="true"
+        >
+
+            <input
+                type="file"
+                accept="image/*"
+                multiple
+                onchange="loadImage(event, 4)"
+            >
+
+            <span>+</span>
+
+        </label>
+
+
+        <!-- SLOT 6 -->
+
+        <label
+            class="image-slot"
+            data-position="5"
+            draggable="true"
+        >
+
+            <input
+                type="file"
+                accept="image/*"
+                multiple
+                onchange="loadImage(event, 5)"
+            >
+
+            <span>+</span>
+
+        </label>
+
+    </div>
+
+
+<!-- =================================
+     ADICIONAR IMAGEM
+================================== -->
+
+<div
+    id="imageSearch"
+    class="image-search"
+>
+
+    <h3>
+        PESQUISAR IMAGEM
+    </h3>
+
+
+<p
+    id="imageSearchHint"
+    class="image-search-hint"
+>
+    Copie a imagem desejada e toque em "COLAR IMAGEM".
+</p>
+
+    <!-- PESQUISA NO GOOGLE -->
+
+    <div
+        class="image-search-bar"
+    >
+
+        <input
+            id="imageSearchInput"
+            type="text"
+            placeholder="Ex: gato preto"
+            autocomplete="off"
+            maxlength="100"
+        >
+
+
+        <button
+            id="imageSearchButton"
+            type="button"
+        >
+            PESQUISAR
+        </button>
+
+    </div>
+
+
+    <!-- COLAR IMAGEM -->
+
+    <button
+        id="pasteImageButton"
+        type="button"
+        class="paste-image-button"
+    >
+        📋 COLAR IMAGEM
+    </button>
+
+
+    <!-- STATUS -->
+
+    <p
+        id="imageSearchStatus"
+        class="image-search-status"
+        style="display: none;"
+    ></p>
+
+</div>
+
+    <!-- =================================
+         AÇÕES DO TABULEIRO
+    ================================== -->
+
+    <div
+        class="setup-actions-container"
+        style="display: flex; flex-direction: column; width: 100%; max-width: 320px; gap: 12px; margin: 20px auto 0;"
+    >
+
+        <button
+            class="ready-button"
+            onclick="finishSetup()"
+            style="width: 100%;"
+        >
+            ✓ PRONTO
+        </button>
+
+
+        <button
+            id="leaveSetupButton"
+            class="ready-button secondary"
+            onclick="leaveSetup()"
+        >
+            SAIR
+        </button>
+
+    </div>
+
+</main>
+
+    <!-- =====================================
+         JOGO
+    ====================================== -->
+
+    <main
+        id="game"
+        class="screen"
+    >
+
+        <!-- TOPO -->
+
+        <div class="game-top">
+
+            <button
+                id="leaveGameButton"
+                class="game-icon-button"
+            >
+                ←
+            </button>
+
+
+            <div
+                id="gameRoomCode"
+                class="game-room-code"
+            >
+                ----
+            </div>
+
+        </div>
+
+
+        <!-- PERSONAGEM DO JOGADOR -->
+
+        <div
+            id="gameStatus"
+            class="game-status"
+        >
+            ESCOLHA SEU PERSONAGEM
+        </div>
+
+
+        <!-- 12 CARTAS -->
+
+        <div
+            id="gameBoard"
+            class="game-board"
+        ></div>
+
+
+        <!-- APOSTA -->
+
+        <button
+            id="betButton"
+            class="bet-button"
+        >
+            APOSTA
+        </button>
+
+    </main>
+
+
+    <!-- =====================================
+         ESCOLHA DO PERSONAGEM
+    ====================================== -->
+
+    <main
+        id="characterChoice"
+        class="screen"
+    >
+
+        <div
+            id="choiceRoomCode"
+            class="game-room-code"
+        >
+            ----
+        </div>
+
+
+        <h2>
+            ESCOLHA SEU PERSONAGEM
+        </h2>
+
+
+        <p>
+            Escolha uma das 12 cartas.
+        </p>
+
+
+        <div
+            id="choiceStatus"
+            class="game-status"
+            style="display: none; background: #fff3cd; color: #856404; padding: 10px; border-radius: 8px; margin: 10px 0; font-weight: bold;"
+        >
+            ⏳ AGUARDANDO O OUTRO JOGADOR ESCOLHER...
+        </div>
+
+
+        <div
+            id="choiceBoard"
+            class="game-board"
+        ></div>
+
+    </main>
+
+
+    <!-- =====================================
+         POP-UP
+    ====================================== -->
+
+    <div
+        id="gamePopup"
+        class="popup-overlay"
+    >
+
+        <div class="game-popup">
+
+            <div class="popup-icon">
+                ✓
+            </div>
+
+
+            <h2></h2>
+
+
+            <p></p>
+
+
+            <div
+                id="popupBoard"
+                class="popup-board"
+                style="display: none;"
+            ></div>
+
+
+            <div
+                class="popup-actions"
+            ></div>
+
+        </div>
+
+    </div>
+
+
+    <!-- =====================================
+         OVERLAY CENTRALIZADO DE ESPERA
+    ====================================== -->
+
+    <div
+        id="waitingOverlay"
+        class="waiting-overlay"
+        style="display: none;"
+    >
+
+        <div class="waiting-box">
+
+            <div class="spinner">
+                ⏳
+            </div>
+
+
+            <h2 id="waitingOverlayTitle">
+                AGUARDANDO O OUTRO JOGADOR...
+            </h2>
+
+
+            <p id="waitingOverlayText">
+                Aguarde o adversário concluir sua ação.
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <!-- =====================================
+         JAVASCRIPT
+    ====================================== -->
+
+    <script src="script.js"></script>
+
+    <script src="jogo.js"></script>
+    
+</div>
+
+</body>
+
+</html>

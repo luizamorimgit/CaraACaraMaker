@@ -1,0 +1,2057 @@
+
+* {
+
+    box-sizing: border-box;
+
+    margin: 0;
+
+    padding: 0;
+}
+
+
+/* =========================
+   BOTÃO DE INSTALAÇÃO
+========================= */
+
+.install-button {
+
+    position: fixed;
+
+    top: 16px;
+
+    left: 16px;
+
+    z-index: 1000;
+
+    background: transparent;
+
+    border: none;
+
+    padding: 4px;
+
+    font-family: inherit;
+
+    font-size: 12px;
+
+    font-weight: 600;
+
+    color: inherit;
+
+    cursor: pointer;
+}
+
+.install-button[hidden] {
+
+    display: none;
+}
+
+
+/* =========================
+   BODY
+========================= */
+
+body {
+
+    min-height: 100vh;
+
+    font-family: "Fredoka", sans-serif;
+
+    background: #ffffff;
+
+    color: #000000;
+
+    overflow-x: hidden;
+
+    transition:
+        background 0.5s ease,
+        color 0.5s ease;
+}
+
+/* =========================
+   TEMA
+========================= */
+
+.theme-button {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    border: 2px solid #555555;
+    background: #ffffff;
+    color: #000000;
+    font-size: 20px;
+    cursor: pointer;
+    z-index: 20;
+    transition:
+        transform 0.2s,
+        background 0.2s,
+        color 0.2s;
+}
+
+.theme-button:active {
+    transform: scale(0.9);
+}
+
+/* =========================
+   TELAS
+========================= */
+
+.screen {
+
+    display: none;
+
+    min-height: 100vh;
+
+    padding: 70px 20px 40px;
+
+    flex-direction: column;
+
+    align-items: center;
+}
+
+.screen.active {
+
+    display: flex;
+}
+
+
+/* =========================
+   TÍTULOS
+========================= */
+
+h1 {
+
+    margin-top: 20px;
+
+    margin-bottom: 55px;
+
+    font-size: clamp(
+        2.2rem,
+        8vw,
+        4.5rem
+    );
+
+    text-align: center;
+
+    letter-spacing: 1px;
+
+    font-weight: 600;
+}
+
+.small-title {
+
+    font-size: clamp(
+        1.8rem,
+        7vw,
+        3rem
+    );
+
+    margin-bottom: 30px;
+}
+
+h2 {
+
+    font-size: 1.2rem;
+
+    letter-spacing: 2px;
+
+    margin-bottom: 25px;
+
+    text-align: center;
+
+    font-weight: 500;
+}
+
+
+/* =========================
+   CÓDIGO DA SALA
+========================= */
+
+.room-code {
+
+    padding: 14px 30px;
+
+    border: 2px solid #000000;
+
+    border-radius: 20px;
+
+    font-size: 1.1rem;
+
+    margin-bottom: 65px;
+
+    background: #ffffff;
+
+    color: #000000;
+}
+
+.room-code strong {
+
+    letter-spacing: 5px;
+
+    margin-left: 5px;
+}
+
+
+/* =========================
+   BOTÕES PRINCIPAIS
+========================= */
+
+.player-options {
+
+    width: min(90%, 420px);
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 18px;
+}
+
+.player-options button {
+
+    width: 100%;
+
+    padding: 18px;
+
+    border: 2px solid #555555;
+
+    border-radius: 18px;
+
+    background: #ffffff;
+
+    color: #000000;
+
+    font-family: inherit;
+
+    font-size: 1rem;
+
+    font-weight: 600;
+
+    cursor: pointer;
+
+    transition:
+        transform 0.2s,
+        background 0.2s,
+        color 0.2s;
+}
+
+.player-options button:active {
+
+    transform: scale(0.97);
+}
+
+.player-options button:disabled {
+
+    opacity: 0.35;
+
+    cursor: not-allowed;
+}
+
+
+/* =========================
+   BOTÃO SAIR
+========================= */
+
+.ready-button {
+
+    padding: 18px;
+
+    border: 2px solid #555555;
+
+    border-radius: 18px;
+
+    background: #ffffff;
+
+    color: #000000;
+
+    font-family: inherit;
+
+    font-size: 1rem;
+
+    font-weight: 600;
+
+    cursor: pointer;
+
+    transition:
+        transform 0.2s,
+        background 0.2s,
+        color 0.2s;
+}
+
+#leaveSetupButton {
+
+    width: 100%;
+
+    background: #ffffff;
+
+    color: #000000;
+}
+
+
+/* =========================
+   SALA
+========================= */
+
+.players-list {
+
+    width: min(90%, 420px);
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 12px;
+
+    margin-bottom: 30px;
+}
+
+.player-card {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 12px;
+
+    padding: 16px;
+
+    border: 2px solid #000000;
+
+    border-radius: 18px;
+
+    background: #ffffff;
+
+    color: #000000;
+
+    transition:
+        background 0.25s ease,
+        border-color 0.25s ease,
+        opacity 0.25s ease;
+}
+
+
+/* Jogador conectado */
+
+.player-card.online {
+
+    background: #f2f2f2;
+}
+
+
+/* Jogador 1 */
+
+.player-card.online.blue-card {
+
+    border-color: #0057ff;
+
+    background:
+        rgba(0, 87, 255, 0.10);
+}
+
+
+/* Jogador 2 */
+
+.player-card.online.red-card {
+
+    border-color: #e00000;
+
+    background:
+        rgba(224, 0, 0, 0.10);
+}
+
+
+/* Jogador aguardando */
+
+.player-card.waiting {
+
+    opacity: 0.45;
+}
+
+
+/* Bolinha do jogador */
+
+.player-color {
+
+    width: 22px;
+
+    height: 22px;
+
+    flex-shrink: 0;
+
+    border-radius: 7px;
+}
+
+.blue {
+
+    background: #0057ff;
+}
+
+.red {
+
+    background: #e00000;
+}
+
+.status {
+
+    margin-left: auto;
+
+    font-size: 0.75rem;
+
+    font-weight: 500;
+
+    opacity: 0.8;
+}
+
+.player-card.online .status {
+
+    opacity: 1;
+}
+
+.waiting-message {
+
+    margin-bottom: 25px;
+
+    opacity: 0.8;
+
+    text-align: center;
+}
+
+
+/* =========================
+   JOGADOR
+========================= */
+
+.player-title {
+
+    border: 2px solid #000000;
+
+    border-radius: 18px;
+
+    padding: 14px 40px;
+
+    margin-bottom: 30px;
+
+    font-size: 1.2rem;
+
+    color: #000000;
+
+    background: #ffffff;
+}
+
+
+/* =========================
+   PRÉVIA DO TABULEIRO
+========================= */
+
+.board-preview {
+
+    width: min(90vw, 500px);
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(3, 1fr);
+
+    gap: 10px;
+
+    margin-bottom: 35px;
+}
+
+.preview-slot {
+
+    aspect-ratio: 1;
+
+    border: 2px solid #000000;
+
+    border-radius: 15px;
+
+    background: #ffffff;
+
+    overflow: hidden;
+}
+
+.preview-slot img {
+
+    width: 100%;
+
+    height: 100%;
+
+    object-fit: cover;
+}
+
+
+/* =========================
+   SLOTS DE IMAGEM
+========================= */
+
+.image-grid {
+
+    width: min(90vw, 450px);
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(3, 1fr);
+
+    gap: 12px;
+
+    margin-bottom: 30px;
+}
+
+.image-slot {
+
+    position: relative;
+
+    aspect-ratio: 1;
+
+    border: 2px dashed #000000;
+
+    border-radius: 16px;
+
+    background: #ffffff;
+
+    color: #000000;
+
+    font-family: inherit;
+
+    font-size: 2rem;
+
+    cursor: pointer;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    overflow: hidden;
+
+    transition:
+        transform 0.2s,
+        border-color 0.2s;
+}
+
+.image-slot:active {
+
+    transform: scale(0.96);
+}
+
+.image-slot input {
+
+    display: none;
+}
+
+.image-slot img {
+
+    width: 100%;
+
+    height: 100%;
+
+    object-fit: cover;
+
+    pointer-events: none;
+}
+
+
+/* =========================
+   ARRASTAR IMAGENS
+========================= */
+
+.image-slot.dragging {
+
+    opacity: 0.45;
+
+    transform: scale(0.95);
+}
+
+.image-slot.drag-over {
+
+    border-style: solid;
+
+    border-color: #0057ff;
+
+    transform: scale(1.04);
+}
+
+
+/* =========================
+   PESQUISA DE IMAGENS
+========================= */
+
+.image-search {
+
+    width: min(92vw, 520px);
+
+    margin: 0 auto 25px;
+
+    text-align: center;
+}
+
+.image-search h3 {
+
+    margin-bottom: 7px;
+
+    font-size: 1.05rem;
+
+    letter-spacing: 1px;
+
+    font-weight: 600;
+}
+
+.image-search-hint {
+
+    margin-bottom: 15px;
+
+    font-size: 0.82rem;
+
+    line-height: 1.4;
+
+    opacity: 0.7;
+}
+
+
+/* Barra */
+
+.image-search-bar {
+
+    display: flex;
+
+    gap: 8px;
+
+    width: 100%;
+}
+
+#imageSearchInput {
+
+    flex: 1;
+
+    min-width: 0;
+
+    height: 48px;
+
+    padding: 0 15px;
+
+    border: 2px solid #000000;
+
+    border-radius: 15px;
+
+    background: #ffffff;
+
+    color: #000000;
+
+    font-family: inherit;
+
+    font-size: 0.95rem;
+
+    outline: none;
+}
+
+#imageSearchInput:focus {
+
+    border-color: #0057ff;
+}
+
+#imageSearchInput::placeholder {
+
+    color: #777777;
+}
+
+
+/* Botão pesquisar */
+
+#imageSearchButton {
+
+    flex-shrink: 0;
+
+    height: 48px;
+
+    padding: 0 16px;
+
+    border: 2px solid #000000;
+
+    border-radius: 15px;
+
+    background: #18181b;
+
+    color: #ffffff;
+
+    font-family: inherit;
+
+    font-size: 0.82rem;
+
+    font-weight: 600;
+
+    cursor: pointer;
+
+    transition:
+        transform 0.15s ease,
+        opacity 0.15s ease;
+}
+
+#imageSearchButton:active {
+
+    transform: scale(0.96);
+}
+
+
+/* Botão colar */
+
+.paste-image-button {
+
+    width: 100%;
+
+    height: 48px;
+
+    margin-top: 10px;
+
+    padding: 0 16px;
+
+    border: 2px solid #000000;
+
+    border-radius: 15px;
+
+    background: #0057ff;
+
+    color: #ffffff;
+
+    font-family: inherit;
+
+    font-size: 0.82rem;
+
+    font-weight: 600;
+
+    cursor: pointer;
+
+    transition:
+        transform 0.15s ease,
+        opacity 0.15s ease;
+}
+
+.paste-image-button:active {
+
+    transform: scale(0.96);
+}
+
+
+/* Status */
+
+.image-search-status {
+
+    margin-top: 12px;
+
+    text-align: center;
+
+    font-size: 0.85rem;
+
+    opacity: 0.75;
+}
+
+
+/* =========================
+   JANELA GOOGLE
+========================= */
+
+.google-search-window {
+
+    position: fixed;
+
+    top: 5vh;
+
+    left: 5vw;
+
+    width: 90vw;
+
+    height: 90vh;
+
+    z-index: 9999;
+
+    display: none;
+
+    flex-direction: column;
+
+    background: #ffffff;
+
+    border: 2px solid #000000;
+
+    border-radius: 20px;
+
+    overflow: hidden;
+
+    box-shadow:
+        0 15px 50px
+        rgba(0, 0, 0, 0.35);
+}
+
+
+/* Cabeçalho */
+
+.google-search-header {
+
+    flex-shrink: 0;
+
+    height: 52px;
+
+    padding: 0 12px 0 18px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    background: #18181b;
+
+    color: #ffffff;
+
+    font-size: 0.85rem;
+
+    font-weight: 600;
+
+    letter-spacing: 1px;
+}
+
+
+/* Fechar */
+
+#closeGoogleSearch {
+
+    width: 36px;
+
+    height: 36px;
+
+    border: 2px solid #ffffff;
+
+    border-radius: 50%;
+
+    background: transparent;
+
+    color: #ffffff;
+
+    font-size: 1rem;
+
+    cursor: pointer;
+}
+
+#closeGoogleSearch:active {
+
+    transform: scale(0.92);
+}
+
+
+/* Google */
+
+.google-search-frame {
+
+    width: 100%;
+
+    height: 100%;
+
+    border: none;
+
+    background: #ffffff;
+}
+
+
+/* =========================
+   POP-UP
+========================= */
+
+.popup-overlay {
+
+    position: fixed;
+
+    inset: 0;
+
+    display: none;
+
+    align-items: center;
+
+    justify-content: center;
+
+    padding: 20px;
+
+    background:
+        rgba(0, 0, 0, 0.65);
+
+    z-index: 9999;
+}
+
+.popup-overlay.active {
+
+    display: flex;
+}
+
+.game-popup {
+
+    width: min(90vw, 500px);
+
+    max-height: 90vh;
+
+    padding: 30px 25px;
+
+    background: #ffffff;
+
+    color: #000000;
+
+    border-radius: 28px;
+
+    text-align: center;
+
+    box-shadow:
+        0 15px 50px
+        rgba(0, 0, 0, 0.25);
+
+    animation:
+        popupIn 0.2s ease-out;
+
+    overflow-y: auto;
+}
+
+
+/* Ícone */
+
+.popup-icon {
+
+    width: 60px;
+
+    height: 60px;
+
+    margin: 0 auto 18px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    border-radius: 50%;
+
+    background: #18181b;
+
+    color: #ffffff;
+
+    font-size: 2rem;
+
+    font-weight: 600;
+}
+
+
+/* Título */
+
+.game-popup h2 {
+
+    margin-bottom: 12px;
+
+    color: #000000;
+
+    font-size: 1.35rem;
+
+    letter-spacing: 1px;
+
+    font-weight: 600;
+}
+
+
+/* Mensagem */
+
+.game-popup p {
+
+    margin-bottom: 22px;
+
+    color: #222222;
+
+    font-size: 1rem;
+
+    line-height: 1.5;
+}
+
+
+/* Imagem do personagem */
+
+.popup-character-image {
+
+    display: block;
+
+    width: min(70vw, 220px);
+
+    aspect-ratio: 3 / 4;
+
+    object-fit: cover;
+
+    margin: 0 auto 22px;
+
+    border-radius: 16px;
+}
+
+
+/* Tabuleiro */
+
+.popup-board {
+
+    width: min(100%, 360px);
+
+    margin: 0 auto 25px;
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(3, 1fr);
+
+    gap: 8px;
+}
+
+.popup-slot {
+
+    aspect-ratio: 1;
+
+    border-radius: 12px;
+
+    overflow: hidden;
+
+    background: #eeeeee;
+}
+
+.popup-slot img {
+
+    width: 100%;
+
+    height: 100%;
+
+    object-fit: cover;
+}
+
+
+/* Ações */
+
+.popup-actions {
+
+    display: flex;
+
+    justify-content: center;
+
+    gap: 12px;
+
+    flex-wrap: wrap;
+}
+
+
+/* Botões */
+
+.popup-button {
+
+    min-width: 110px;
+
+    padding: 13px 20px;
+
+    border: none;
+
+    border-radius: 16px;
+
+    background: #18181b;
+
+    color: #ffffff;
+
+    font-family: inherit;
+
+    font-size: 0.95rem;
+
+    font-weight: 600;
+
+    cursor: pointer;
+
+    transition:
+        transform 0.2s,
+        background 0.2s;
+}
+
+.popup-button:active {
+
+    transform: scale(0.95);
+}
+
+.popup-button.secondary {
+
+    background: #ffffff;
+
+    color: #000000;
+
+    border: 2px solid #000000;
+}
+
+
+/* Animação */
+
+@keyframes popupIn {
+
+    from {
+
+        transform: scale(0.9);
+
+        opacity: 0;
+    }
+
+    to {
+
+        transform: scale(1);
+
+        opacity: 1;
+    }
+}
+
+
+/* =========================
+   CAMPO PARA ENTRAR NA SALA
+========================= */
+
+.room-input {
+
+    width: min(90vw, 300px);
+
+    padding: 16px;
+
+    margin-bottom: 20px;
+
+    border: 2px solid #000000;
+
+    border-radius: 18px;
+
+    background: #ffffff;
+
+    color: #000000;
+
+    font-family: inherit;
+
+    font-size: 1.3rem;
+
+    font-weight: 600;
+
+    text-align: center;
+
+    text-transform: uppercase;
+
+    outline: none;
+}
+
+.room-input::placeholder {
+
+    color: #555555;
+}
+
+.room-input:focus {
+
+    border-color: #0057ff;
+}
+
+
+/* =========================
+   BOTÃO VOLTAR / SAIR
+========================= */
+
+.game-icon-button {
+
+    width: 48px;
+
+    height: 48px;
+
+    border: 2px solid #555555;
+
+    border-radius: 16px;
+
+    background: #ffffff;
+
+    color: #000000;
+
+    font-family: inherit;
+
+    font-size: 1rem;
+
+    font-weight: 600;
+
+    cursor: pointer;
+
+    transition:
+        transform 0.2s,
+        background 0.2s;
+}
+
+.game-icon-button:active {
+
+    transform: scale(0.94);
+}
+
+
+/* =========================
+   TABULEIRO DO JOGO
+========================= */
+
+.game-board {
+
+    width: min(92vw, 520px);
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(4, 1fr);
+
+    gap: 10px;
+
+    margin: 20px auto 30px;
+}
+
+
+/* =========================
+   CARTA
+========================= */
+
+.game-card {
+
+    position: relative;
+
+    aspect-ratio: 3 / 4;
+
+    cursor: pointer;
+
+    perspective: 800px;
+}
+
+.game-card-face {
+
+    position: absolute;
+
+    inset: 0;
+
+    width: 100%;
+
+    height: 100%;
+
+    border-radius: 14px;
+
+    overflow: hidden;
+
+    backface-visibility: hidden;
+
+    transition:
+        transform 0.35s ease;
+}
+
+
+/* Frente */
+
+.game-card-front {
+
+    transform: rotateY(0deg);
+
+    background: #ffffff;
+
+    border: 2px solid #000000;
+}
+
+.game-card-front img {
+
+    width: 100%;
+
+    height: 100%;
+
+    object-fit: cover;
+
+    display: block;
+}
+
+
+/* Verso */
+
+.game-card-back {
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    background: #555555;
+
+    border: 2px solid #ffffff;
+
+    color: #ffffff;
+
+    font-size: 2rem;
+
+    font-weight: 600;
+
+    transform: rotateY(180deg);
+}
+
+
+/* Carta abaixada */
+
+.game-card.flipped .game-card-front {
+
+    transform: rotateY(180deg);
+}
+
+.game-card.flipped .game-card-back {
+
+    transform: rotateY(0deg);
+}
+
+
+/* Personagem selecionado */
+
+.game-card.selected {
+
+    transform: scale(0.96);
+}
+
+.game-card.selected .game-card-front {
+
+    border-color: #0057ff;
+
+    box-shadow:
+        0 0 0 3px
+        rgba(0, 87, 255, 0.35);
+}
+
+
+/* Carta desativada */
+
+.game-card.disabled {
+
+    pointer-events: none;
+
+    opacity: 0.65;
+}
+
+
+/* Seleção durante a aposta */
+
+.game-card.bet-selection {
+
+    cursor: pointer;
+}
+
+.game-card.bet-selection:hover {
+
+    transform: scale(1.03);
+}
+
+
+/* Carta de palpite errado */
+
+.game-card.wrong-guess {
+
+    position: relative;
+
+    opacity: 0.6;
+}
+
+.game-card.wrong-guess::after {
+
+    content: "❌";
+
+    position: absolute;
+
+    top: 50%;
+
+    left: 50%;
+
+    transform:
+        translate(-50%, -50%);
+
+    font-size: 3.5rem;
+
+    z-index: 20;
+
+    pointer-events: none;
+
+    text-shadow:
+        0 2px 10px
+        rgba(0, 0, 0, 0.5);
+}
+
+
+/* =========================
+   STATUS DO JOGO
+========================= */
+
+.game-status {
+
+    margin-bottom: 10px;
+
+    text-align: center;
+
+    font-size: 0.95rem;
+
+    letter-spacing: 1px;
+
+    opacity: 0.85;
+}
+
+
+/* =========================
+   BOTÃO APOSTA
+========================= */
+
+.bet-button {
+
+    padding: 16px 35px;
+
+    border: 2px solid #555555;
+
+    border-radius: 18px;
+
+    background: #ffffff;
+
+    color: #000000;
+
+    font-family: inherit;
+
+    font-size: 1rem;
+
+    font-weight: 600;
+
+    cursor: pointer;
+
+    transition:
+        transform 0.2s,
+        background 0.2s;
+}
+
+.bet-button:active {
+
+    transform: scale(0.96);
+}
+
+.bet-button:disabled {
+
+    opacity: 0.4;
+
+    cursor: not-allowed;
+}
+
+
+/* =========================
+   TOPO DO JOGO
+========================= */
+
+.game-top {
+
+    width: 100%;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    margin-bottom: 15px;
+}
+
+.game-room-code {
+
+    font-size: 0.9rem;
+
+    letter-spacing: 3px;
+
+    opacity: 0.8;
+}
+
+
+/* =========================
+   CÓDIGO DE PARTIDA SALVA
+========================= */
+
+.saved-game-code {
+
+    margin: 15px auto !important;
+
+    padding: 14px 28px !important;
+
+    width: fit-content !important;
+
+    border-radius: 14px !important;
+
+    background: #18181b !important;
+
+    color: #ffffff !important;
+
+    font-size: 1.8rem !important;
+
+    font-weight: 700 !important;
+
+    letter-spacing: 6px !important;
+
+    text-align: center !important;
+
+    box-shadow:
+        0 8px 20px
+        rgba(0, 0, 0, 0.4) !important;
+}
+
+
+/* =========================
+   OVERLAY DE ESPERA
+========================= */
+
+.waiting-overlay {
+
+    position: fixed;
+
+    top: 0;
+
+    left: 0;
+
+    width: 100vw;
+
+    height: 100vh;
+
+    background:
+        rgba(0, 0, 0, 0.7);
+
+    backdrop-filter: blur(8px);
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    z-index: 99999;
+}
+
+.waiting-box {
+
+    background: #ffffff;
+
+    color: #000000;
+
+    padding: 35px 45px;
+
+    border-radius: 24px;
+
+    text-align: center;
+
+    box-shadow:
+        0 20px 40px
+        rgba(0, 0, 0, 0.4);
+
+    max-width: 90vw;
+
+    width: 380px;
+}
+
+.waiting-box .spinner {
+
+    font-size: 3.2rem;
+
+    margin-bottom: 14px;
+
+    animation:
+        bounceWaiting
+        1.4s infinite ease-in-out;
+}
+
+@keyframes bounceWaiting {
+
+    0%, 100% {
+
+        transform: translateY(0);
+    }
+
+    50% {
+
+        transform: translateY(-10px);
+    }
+}
+
+.waiting-box h2 {
+
+    font-size: 1.35rem;
+
+    color: #000000;
+
+    margin-bottom: 8px;
+
+    font-weight: 700;
+}
+
+.waiting-box p {
+
+    font-size: 0.95rem;
+
+    color: #333333;
+
+    margin: 0;
+}
+
+
+/* Overlay enquanto aguarda */
+
+body.waiting-active #game,
+body.waiting-active #characterChoice,
+body.waiting-active #setup,
+body.waiting-active #lobby {
+
+    opacity: 0.25 !important;
+
+    filter: blur(4px) !important;
+
+    pointer-events: none !important;
+
+    transition:
+        opacity 0.3s ease,
+        filter 0.3s ease !important;
+}
+
+
+/* =========================
+   TEMAS DOS JOGADORES
+========================= */
+
+
+/* Jogador 1 */
+
+body:not(.dark).player-1-theme {
+
+    background:
+        radial-gradient(
+            circle at top center,
+            rgba(0, 87, 255, 0.18),
+            rgba(255, 255, 255, 0.98)
+        ),
+        #ffffff !important;
+
+    color: #000000;
+}
+
+
+/* Jogador 2 */
+
+body:not(.dark).player-2-theme {
+
+    background:
+        radial-gradient(
+            circle at top center,
+            rgba(224, 0, 0, 0.18),
+            rgba(255, 255, 255, 0.98)
+        ),
+        #ffffff !important;
+
+    color: #000000;
+}
+
+
+/* =========================
+   MODO ESCURO
+========================= */
+
+body.dark {
+    background: #18181b;
+    color: #ffffff;
+}
+
+
+/* Elementos gerais */
+
+body.dark .bubbles span {
+    background:
+        rgba(255, 255, 255, 0.12);
+}
+
+body.dark .theme-button {
+    background: #18181b;
+    border-color: #ffffff;
+    color: #ffffff;
+}
+
+body.dark h1,
+body.dark h2 {
+    color: #ffffff;
+}
+
+
+/* Botão de instalação */
+
+body.dark .install-button {
+    color: #ffffff;
+}
+
+
+/* Código da sala */
+
+body.dark .room-code {
+    background: #18181b;
+    border-color: #ffffff;
+    color: #ffffff;
+}
+
+
+/* Botões principais */
+
+body.dark .player-options button,
+body.dark .ready-button,
+body.dark .game-icon-button,
+body.dark .bet-button {
+    background: #18181b;
+    border-color: #ffffff;
+    color: #ffffff;
+}
+
+body.dark .player-options button:disabled,
+body.dark .ready-button:disabled,
+body.dark .game-icon-button:disabled,
+body.dark .bet-button:disabled {
+    color: #ffffff;
+}
+
+body.dark #leaveSetupButton {
+    background: #333333;
+    color: #ffffff;
+}
+
+
+/* Sala */
+
+body.dark .player-card {
+    background: #18181b;
+    border-color: #ffffff;
+    color: #ffffff;
+}
+
+body.dark .player-card.online {
+    background: #202024;
+}
+
+body.dark .player-card.online.blue-card {
+    border-color: #0057ff;
+    background:
+        rgba(0, 87, 255, 0.16);
+}
+
+body.dark .player-card.online.red-card {
+    border-color: #e00000;
+    background:
+        rgba(224, 0, 0, 0.16);
+}
+
+body.dark .player-card.waiting {
+    color: #ffffff;
+}
+
+body.dark .waiting-message {
+    color: #ffffff;
+}
+
+
+/* Jogador */
+
+body.dark .player-title {
+    background: #18181b;
+    border-color: #ffffff;
+    color: #ffffff;
+}
+
+
+/* Prévia do tabuleiro */
+
+body.dark .preview-slot {
+    background: #18181b;
+    border-color: #ffffff;
+}
+
+
+/* Slots de imagem */
+
+body.dark .image-slot {
+    background: #18181b;
+    border-color: #ffffff;
+    color: #ffffff;
+}
+
+
+/* Pesquisa de imagens */
+
+body.dark #imageSearchInput {
+    background: #18181b;
+    border-color: #ffffff;
+    color: #ffffff;
+}
+
+body.dark #imageSearchInput::placeholder {
+    color: #aaaaaa;
+}
+
+body.dark #imageSearchInput:focus {
+    border-color: #0057ff;
+}
+
+body.dark #imageSearchButton {
+    background: #ffffff;
+    border-color: #ffffff;
+    color: #000000;
+}
+
+body.dark .paste-image-button {
+    background: #0057ff;
+    border-color: #ffffff;
+    color: #ffffff;
+}
+
+body.dark .image-search-status {
+    color: #ffffff;
+}
+
+
+/* Janela Google */
+
+body.dark .google-search-window {
+    border-color: #ffffff;
+    background: #18181b;
+}
+
+body.dark .google-search-frame {
+    background: #18181b;
+}
+
+
+/* Pop-up */
+
+body.dark .game-popup {
+    background: #18181b;
+    color: #ffffff;
+}
+
+body.dark .game-popup h2 {
+    color: #ffffff;
+}
+
+body.dark .game-popup p {
+    color: #dddddd;
+}
+
+body.dark .popup-icon {
+    background: #ffffff;
+    color: #000000;
+}
+
+body.dark .popup-button {
+    background: #ffffff;
+    color: #000000;
+}
+
+body.dark .popup-button.secondary {
+    background: #18181b;
+    color: #ffffff;
+    border: 2px solid #ffffff;
+}
+
+body.dark .popup-slot {
+    background: #202024;
+}
+
+
+/* Campo para entrar na sala */
+
+body.dark .room-input {
+    background: #18181b;
+    border-color: #ffffff;
+    color: #ffffff;
+}
+
+body.dark .room-input::placeholder {
+    color: #aaaaaa;
+}
+
+body.dark .room-input:focus {
+    border-color: #0057ff;
+}
+
+
+/* Tabuleiro */
+
+body.dark .game-card-front {
+    background: #202024;
+    border-color: #ffffff;
+}
+
+body.dark .game-card-back {
+    background: #333333;
+    border-color: #ffffff;
+    color: #ffffff;
+}
+
+body.dark .game-card.selected .game-card-front {
+    border-color: #0057ff;
+    box-shadow:
+        0 0 0 3px
+        rgba(0, 87, 255, 0.35);
+}
+
+
+/* Status do jogo */
+
+body.dark .game-status {
+    color: #ffffff;
+}
+
+
+/* Código de partida salva */
+
+body.dark .saved-game-code {
+    background: #18181b !important;
+    color: #ffffff !important;
+}
+
+
+/* Overlay de espera */
+
+body.dark .waiting-box {
+    background: #18181b;
+    color: #ffffff;
+    border: 2px solid #ffffff;
+}
+
+body.dark .waiting-box h2 {
+    color: #ffffff;
+}
+
+body.dark .waiting-box p {
+    color: #cccccc;
+}
+
+
+/* Temas escuros dos jogadores */
+
+body.dark.player-1-theme {
+    background:
+        radial-gradient(
+            circle at top center,
+            rgba(0, 87, 255, 0.30),
+            #18181b
+        ),
+        #18181b !important;
+}
+
+body.dark.player-2-theme {
+    background:
+        radial-gradient(
+            circle at top center,
+            rgba(224, 0, 0, 0.30),
+            #18181b
+        ),
+        #18181b !important;
+}
+
+
+/* Aposta */
+
+body.dark .bet-grid-item.selected {
+    border-color: #0057ff !important;
+}
+
+
+/* Créditos */
+
+body.dark .game-credits {
+    color: #ffffff;
+}
+
+/* =========================
+   APOSTA
+========================= */
+
+.bet-grid-item.selected {
+
+    border: 4px solid #0057ff !important;
+
+    transform: scale(1.1) !important;
+
+    box-shadow:
+        0 0 15px
+        rgba(0, 87, 255, 0.6);
+}
+
+
+/* =========================
+   CRÉDITOS
+========================= */
+
+.game-credits {
+
+    margin-top: 45px;
+
+    display: flex;
+
+    flex-direction: column;
+
+    align-items: center;
+
+    gap: 5px;
+
+    font-size: 0.8rem;
+
+    opacity: 0.6;
+
+    text-align: center;
+}
+
+
+/* =========================
+   CELULAR
+========================= */
+
+@media (max-width: 600px) {
+
+    .image-search {
+
+        width: min(94vw, 500px);
+    }
+
+    #imageSearchButton {
+
+        padding: 0 12px;
+    }
+
+    .google-search-window {
+
+        top: 2vh;
+
+        left: 2vw;
+
+        width: 96vw;
+
+        height: 96vh;
+
+        border-radius: 16px;
+    }
+
+    .google-search-header {
+
+        height: 48px;
+
+        padding-left: 14px;
+    }
+}
+
+
+@media (max-width: 500px) {
+
+    .game-board {
+
+        width: min(94vw, 420px);
+
+        gap: 7px;
+    }
+
+    .game-card-front,
+    .game-card-back {
+
+        border-radius: 11px;
+    }
+
+    .game-card-back {
+
+        font-size: 1.5rem;
+    }
+}
