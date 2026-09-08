@@ -1654,8 +1654,8 @@ function createImageSlots() {
                 boardImages[i];
 
 
-            // Impede o navegador de arrastar
-            // a própria imagem.
+            // Impede a imagem de ser
+            // arrastada pelo navegador.
             img.draggable =
                 false;
 
@@ -1689,8 +1689,6 @@ function createImageSlots() {
                 "Excluir imagem";
 
 
-            // Impede que o botão inicie
-            // um arraste.
             deleteButton.addEventListener(
                 "pointerdown",
                 function (event) {
@@ -1702,7 +1700,6 @@ function createImageSlots() {
             );
 
 
-            // Excluir imagem
             deleteButton.addEventListener(
                 "click",
                 function (event) {
@@ -1753,8 +1750,6 @@ function createImageSlots() {
             "click",
             function (event) {
 
-                // Se acabou de arrastar,
-                // não abre o seletor de arquivos.
                 if (
                     slot.dataset.wasDragged ===
                     "true"
@@ -1767,8 +1762,6 @@ function createImageSlots() {
                 }
 
 
-                // O botão excluir possui
-                // seu próprio comportamento.
                 if (
                     event.target.closest(
                         ".delete-image-button"
@@ -1800,7 +1793,7 @@ function createImageSlots() {
 
 
         // ==================================
-        // ARRASTAR COM MOUSE OU TOQUE
+        // ARRASTAR
         // ==================================
 
         let dragging =
@@ -1819,19 +1812,126 @@ function createImageSlots() {
             null;
 
 
+        let dragPreview =
+            null;
+
+
         const DRAG_DISTANCE =
             8;
 
 
         // ==================================
-        // INÍCIO DO ARRASTE
+        // CRIAR MINIATURA
+        // ==================================
+
+        function createDragPreview() {
+
+            if (!boardImages[i]) {
+                return;
+            }
+
+
+            dragPreview =
+                document.createElement("img");
+
+
+            dragPreview.src =
+                boardImages[i];
+
+
+            dragPreview.draggable =
+                false;
+
+
+            dragPreview.style.position =
+                "fixed";
+
+
+            dragPreview.style.width =
+                "70px";
+
+
+            dragPreview.style.height =
+                "70px";
+
+
+            dragPreview.style.objectFit =
+                "cover";
+
+
+            dragPreview.style.borderRadius =
+                "14px";
+
+
+            dragPreview.style.pointerEvents =
+                "none";
+
+
+            dragPreview.style.zIndex =
+                "99999";
+
+
+            dragPreview.style.boxShadow =
+                "0 6px 18px rgba(0,0,0,0.25)";
+
+
+            dragPreview.style.transform =
+                "translate(-50%, -120%) scale(1.05)";
+
+
+            document.body.appendChild(
+                dragPreview
+            );
+        }
+
+
+        // ==================================
+        // MOVER MINIATURA
+        // ==================================
+
+        function moveDragPreview(
+            x,
+            y
+        ) {
+
+            if (!dragPreview) {
+                return;
+            }
+
+
+            dragPreview.style.left =
+                x + "px";
+
+
+            dragPreview.style.top =
+                y + "px";
+        }
+
+
+        // ==================================
+        // REMOVER MINIATURA
+        // ==================================
+
+        function removeDragPreview() {
+
+            if (dragPreview) {
+
+                dragPreview.remove();
+
+                dragPreview =
+                    null;
+            }
+        }
+
+
+        // ==================================
+        // INÍCIO
         // ==================================
 
         slot.addEventListener(
             "pointerdown",
             function (event) {
 
-                // Não arrastar pelo botão excluir.
                 if (
                     event.target.closest(
                         ".delete-image-button"
@@ -1841,7 +1941,6 @@ function createImageSlots() {
                 }
 
 
-                // Slot vazio não pode ser arrastado.
                 if (!boardImages[i]) {
                     return;
                 }
@@ -1923,6 +2022,12 @@ function createImageSlots() {
                     slot.classList.add(
                         "dragging"
                     );
+
+
+                    // Cria a miniatura
+                    // somente quando realmente
+                    // começou a arrastar.
+                    createDragPreview();
                 }
 
 
@@ -1934,8 +2039,18 @@ function createImageSlots() {
                 event.preventDefault();
 
 
-                // Descobre qual slot está
-                // embaixo do dedo/mouse.
+                // A miniatura acompanha
+                // o dedo/mouse.
+                moveDragPreview(
+                    event.clientX,
+                    event.clientY
+                );
+
+
+                // ==================================
+                // DESCOBRIR SLOT ALVO
+                // ==================================
+
                 const element =
                     document.elementFromPoint(
                         event.clientX,
@@ -1951,7 +2066,7 @@ function createImageSlots() {
                         : null;
 
 
-                // Limpa os destaques anteriores.
+                // Limpa os destaques.
                 document
                     .querySelectorAll(
                         ".image-slot"
@@ -2065,6 +2180,9 @@ function createImageSlots() {
                 }
 
 
+                removeDragPreview();
+
+
                 dragging =
                     false;
 
@@ -2117,6 +2235,9 @@ function createImageSlots() {
                             );
                         }
                     );
+
+
+                removeDragPreview();
             }
         );
 
@@ -2126,8 +2247,8 @@ function createImageSlots() {
         );
     }
 }
-
-
+                
+                    
 // ==========================================
 // COMPATIBILIDADE COM O HTML
 // ==========================================
