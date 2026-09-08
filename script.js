@@ -1713,114 +1713,72 @@ function createImageSlots() {
         slot.draggable =
             true;
 
+/* ==========================================
+   SLOTS DE IMAGEM
+========================================== */
 
-        slot.addEventListener(
-            "dragstart",
-            function () {
-
-                slot.classList.add(
-                    "dragging"
-                );
-            }
-        );
+.image-slot {
+    position: relative;
+    touch-action: none;
+}
 
 
-        slot.addEventListener(
-            "dragend",
-            function () {
+/* ==========================================
+   BOTÃO EXCLUIR
+========================================== */
 
-                slot.classList.remove(
-                    "dragging"
-                );
-            }
-        );
+.delete-image-button {
+    position: absolute;
 
+    top: 5px;
+    right: 5px;
 
-        slot.addEventListener(
-            "dragover",
-            function (event) {
+    width: 28px;
+    height: 28px;
 
-                event.preventDefault();
+    border: none;
+    border-radius: 50%;
 
-                slot.classList.add(
-                    "drag-over"
-                );
-            }
-        );
+    background: rgba(0, 0, 0, 0.65);
 
+    color: white;
 
-        slot.addEventListener(
-            "dragleave",
-            function () {
+    font-size: 20px;
+    font-weight: bold;
 
-                slot.classList.remove(
-                    "drag-over"
-                );
-            }
-        );
+    display: flex;
+    align-items: center;
+    justify-content: center;
 
+    cursor: pointer;
 
-        slot.addEventListener(
-            "drop",
-            function (event) {
+    z-index: 10;
 
-                event.preventDefault();
+    padding: 0;
+    margin: 0;
+}
 
 
-                slot.classList.remove(
-                    "drag-over"
-                );
+.delete-image-button:hover {
+    transform: scale(1.08);
+}
 
 
-                const dragging =
-                    document.querySelector(
-                        ".image-slot.dragging"
-                    );
+/* ==========================================
+   IMAGEM SENDO ARRASTADA
+========================================== */
+
+.image-slot.dragging {
+    opacity: 0.5;
+}
 
 
-                if (!dragging) {
-                    return;
-                }
+/* ==========================================
+   DESTINO DO ARRASTE
+========================================== */
 
-
-                const from =
-                    Number(
-                        dragging.dataset.position
-                    );
-
-
-                const to =
-                    Number(
-                        slot.dataset.position
-                    );
-
-
-                if (from === to) {
-                    return;
-                }
-
-
-                const temp =
-                    boardImages[from];
-
-
-                boardImages[from] =
-                    boardImages[to];
-
-
-                boardImages[to] =
-                    temp;
-
-
-                createImageSlots();
-            }
-        );
-
-
-        imageGrid.appendChild(
-            slot
-        );
-    }
+.image-slot.drag-over {
+    transform: scale(1.05);
 }
 
 
