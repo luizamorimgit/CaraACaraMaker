@@ -1598,20 +1598,13 @@ function compressImage(file) {
 
 function createImageSlots() {
 
-    imageGrid.innerHTML =
-        "";
+    imageGrid.innerHTML = "";
 
 
-    for (
-        let i = 0;
-        i < 6;
-        i++
-    ) {
+    for (let i = 0; i < 6; i++) {
 
         const slot =
-            document.createElement(
-                "div"
-            );
+            document.createElement("div");
 
 
         slot.className =
@@ -1622,10 +1615,12 @@ function createImageSlots() {
             i;
 
 
+        // ==================================
+        // INPUT DE IMAGEM
+        // ==================================
+
         const input =
-            document.createElement(
-                "input"
-            );
+            document.createElement("input");
 
 
         input.type =
@@ -1635,37 +1630,109 @@ function createImageSlots() {
         input.accept =
             "image/*";
 
-        
+
         input.multiple =
-        true;
-        
+            true;
+
+
         slot.appendChild(
             input
         );
 
 
+        // ==================================
+        // IMAGEM
+        // ==================================
+
         if (boardImages[i]) {
 
             const img =
-                document.createElement(
-                    "img"
-                );
+                document.createElement("img");
 
 
             img.src =
                 boardImages[i];
 
 
+            // Impede o navegador de arrastar
+            // a própria imagem.
+            img.draggable =
+                false;
+
+
             slot.appendChild(
                 img
             );
 
+
+            // ==================================
+            // BOTÃO EXCLUIR
+            // ==================================
+
+            const deleteButton =
+                document.createElement("button");
+
+
+            deleteButton.type =
+                "button";
+
+
+            deleteButton.className =
+                "delete-image-button";
+
+
+            deleteButton.textContent =
+                "×";
+
+
+            deleteButton.title =
+                "Excluir imagem";
+
+
+            // Impede que o botão inicie
+            // um arraste.
+            deleteButton.addEventListener(
+                "pointerdown",
+                function (event) {
+
+                    event.preventDefault();
+
+                    event.stopPropagation();
+                }
+            );
+
+
+            // Excluir imagem
+            deleteButton.addEventListener(
+                "click",
+                function (event) {
+
+                    event.preventDefault();
+
+                    event.stopPropagation();
+
+
+                    boardImages[i] =
+                        null;
+
+
+                    createImageSlots();
+                }
+            );
+
+
+            slot.appendChild(
+                deleteButton
+            );
+
         } else {
 
+            // ==================================
+            // SLOT VAZIO
+            // ==================================
+
             const plus =
-                document.createElement(
-                    "span"
-                );
+                document.createElement("span");
 
 
             plus.textContent =
@@ -1684,7 +1751,32 @@ function createImageSlots() {
 
         slot.addEventListener(
             "click",
-            function () {
+            function (event) {
+
+                // Se acabou de arrastar,
+                // não abre o seletor de arquivos.
+                if (
+                    slot.dataset.wasDragged ===
+                    "true"
+                ) {
+
+                    slot.dataset.wasDragged =
+                        "false";
+
+                    return;
+                }
+
+
+                // O botão excluir possui
+                // seu próprio comportamento.
+                if (
+                    event.target.closest(
+                        ".delete-image-button"
+                    )
+                ) {
+                    return;
+                }
+
 
                 input.click();
             }
@@ -1706,79 +1798,333 @@ function createImageSlots() {
             }
         );
 
+
         // ==================================
-        // DRAG
+        // ARRASTAR COM MOUSE OU TOQUE
         // ==================================
 
-        slot.draggable =
-            true;
-
-/* ==========================================
-   SLOTS DE IMAGEM
-========================================== */
-
-.image-slot {
-    position: relative;
-    touch-action: none;
-}
+        let dragging =
+            false;
 
 
-/* ==========================================
-   BOTÃO EXCLUIR
-========================================== */
-
-.delete-image-button {
-    position: absolute;
-
-    top: 5px;
-    right: 5px;
-
-    width: 28px;
-    height: 28px;
-
-    border: none;
-    border-radius: 50%;
-
-    background: rgba(0, 0, 0, 0.65);
-
-    color: white;
-
-    font-size: 20px;
-    font-weight: bold;
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    cursor: pointer;
-
-    z-index: 10;
-
-    padding: 0;
-    margin: 0;
-}
+        let startX =
+            0;
 
 
-.delete-image-button:hover {
-    transform: scale(1.08);
-}
+        let startY =
+            0;
 
 
-/* ==========================================
-   IMAGEM SENDO ARRASTADA
-========================================== */
-
-.image-slot.dragging {
-    opacity: 0.5;
-}
+        let currentTarget =
+            null;
 
 
-/* ==========================================
-   DESTINO DO ARRASTE
-========================================== */
+        const DRAG_DISTANCE =
+            8;
 
-.image-slot.drag-over {
-    transform: scale(1.05);
+
+        // ==================================
+        // INÍCIO DO ARRASTE
+        // ==================================
+
+        slot.addEventListener(
+            "pointerdown",
+            function (event) {
+
+                // Não arrastar pelo botão excluir.
+                if (
+                    event.target.closest(
+                        ".delete-image-button"
+                    )
+                ) {
+                    return;
+                }
+
+
+                // Slot vazio não pode ser arrastado.
+                if (!boardImages[i]) {
+                    return;
+                }
+
+
+                startX =
+                    event.clientX;
+
+
+                startY =
+                    event.clientY;
+
+
+                dragging =
+                    false;
+
+
+                currentTarget =
+                    null;
+
+
+                slot.dataset.wasDragged =
+                    "false";
+
+
+                try {
+
+                    slot.setPointerCapture(
+                        event.pointerId
+                    );
+
+                } catch (error) {}
+            }
+        );
+
+
+        // ==================================
+        // MOVIMENTO
+        // ==================================
+
+        slot.addEventListener(
+            "pointermove",
+            function (event) {
+
+                if (!dragging) {
+
+                    const distanceX =
+                        Math.abs(
+                            event.clientX -
+                            startX
+                        );
+
+
+                    const distanceY =
+                        Math.abs(
+                            event.clientY -
+                            startY
+                        );
+
+
+                    if (
+                        distanceX <
+                            DRAG_DISTANCE &&
+                        distanceY <
+                            DRAG_DISTANCE
+                    ) {
+                        return;
+                    }
+
+
+                    dragging =
+                        true;
+
+
+                    slot.dataset.wasDragged =
+                        "true";
+
+
+                    slot.classList.add(
+                        "dragging"
+                    );
+                }
+
+
+                if (!dragging) {
+                    return;
+                }
+
+
+                event.preventDefault();
+
+
+                // Descobre qual slot está
+                // embaixo do dedo/mouse.
+                const element =
+                    document.elementFromPoint(
+                        event.clientX,
+                        event.clientY
+                    );
+
+
+                const target =
+                    element
+                        ? element.closest(
+                            ".image-slot"
+                        )
+                        : null;
+
+
+                // Limpa os destaques anteriores.
+                document
+                    .querySelectorAll(
+                        ".image-slot"
+                    )
+                    .forEach(
+                        function (item) {
+
+                            item.classList.remove(
+                                "drag-over"
+                            );
+                        }
+                    );
+
+
+                if (
+                    target &&
+                    imageGrid.contains(target)
+                ) {
+
+                    const targetPosition =
+                        Number(
+                            target.dataset.position
+                        );
+
+
+                    if (
+                        targetPosition !== i
+                    ) {
+
+                        target.classList.add(
+                            "drag-over"
+                        );
+
+
+                        currentTarget =
+                            targetPosition;
+
+                    } else {
+
+                        currentTarget =
+                            null;
+                    }
+
+                } else {
+
+                    currentTarget =
+                        null;
+                }
+            }
+        );
+
+
+        // ==================================
+        // SOLTAR
+        // ==================================
+
+        slot.addEventListener(
+            "pointerup",
+            function (event) {
+
+                if (!dragging) {
+                    return;
+                }
+
+
+                event.preventDefault();
+
+
+                slot.classList.remove(
+                    "dragging"
+                );
+
+
+                document
+                    .querySelectorAll(
+                        ".image-slot"
+                    )
+                    .forEach(
+                        function (item) {
+
+                            item.classList.remove(
+                                "drag-over"
+                            );
+                        }
+                    );
+
+
+                // Troca as imagens.
+                if (
+                    currentTarget !== null &&
+                    currentTarget !== i
+                ) {
+
+                    const temp =
+                        boardImages[i];
+
+
+                    boardImages[i] =
+                        boardImages[
+                            currentTarget
+                        ];
+
+
+                    boardImages[
+                        currentTarget
+                    ] =
+                        temp;
+
+
+                    createImageSlots();
+                }
+
+
+                dragging =
+                    false;
+
+
+                currentTarget =
+                    null;
+
+
+                try {
+
+                    slot.releasePointerCapture(
+                        event.pointerId
+                    );
+
+                } catch (error) {}
+            }
+        );
+
+
+        // ==================================
+        // CANCELAMENTO
+        // ==================================
+
+        slot.addEventListener(
+            "pointercancel",
+            function () {
+
+                dragging =
+                    false;
+
+
+                currentTarget =
+                    null;
+
+
+                slot.classList.remove(
+                    "dragging"
+                );
+
+
+                document
+                    .querySelectorAll(
+                        ".image-slot"
+                    )
+                    .forEach(
+                        function (item) {
+
+                            item.classList.remove(
+                                "drag-over"
+                            );
+                        }
+                    );
+            }
+        );
+
+
+        imageGrid.appendChild(
+            slot
+        );
+    }
 }
 
 
