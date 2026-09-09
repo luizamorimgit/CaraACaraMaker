@@ -77,15 +77,18 @@ function showScreen(screen) {
     screen.classList.add("active");
 }
 
+
 // ==========================================
 // INSTALAÇÃO DO APP
 // ==========================================
 
 let deferredPrompt = null;
 
-const installButton = document.getElementById("installButton");
+const installButton =
+    document.getElementById("installButton");
 
 function hideInstallButtonIfInstalled() {
+
     const isInstalled =
         window.matchMedia("(display-mode: standalone)").matches ||
         window.navigator.standalone === true;
@@ -97,39 +100,52 @@ function hideInstallButtonIfInstalled() {
 
 hideInstallButtonIfInstalled();
 
-window.addEventListener("beforeinstallprompt", (event) => {
-    event.preventDefault();
-    deferredPrompt = event;
-});
+window.addEventListener(
+    "beforeinstallprompt",
+    function (event) {
 
-installButton?.addEventListener("click", async () => {
+        event.preventDefault();
 
-    if (!deferredPrompt) {
-
-        openPopup(
-            "INSTALAÇÃO INDISPONÍVEL",
-            "A INSTALAÇÃO DO APP NÃO ESTÁ DISPONÍVEL NESTE DISPOSITIVO OU NAVEGADOR.",
-            null,
-            "OK"
-        );
-
-        return;
+        deferredPrompt = event;
     }
+);
 
-    deferredPrompt.prompt();
+installButton?.addEventListener(
+    "click",
+    async function () {
 
-    await deferredPrompt.userChoice;
+        if (!deferredPrompt) {
 
-    deferredPrompt = null;
-});
+            openPopup(
+                "INSTALAÇÃO INDISPONÍVEL",
+                "A INSTALAÇÃO DO APP NÃO ESTÁ DISPONÍVEL NESTE DISPOSITIVO OU NAVEGADOR.",
+                null,
+                "OK"
+            );
 
-window.addEventListener("appinstalled", () => {
-    deferredPrompt = null;
+            return;
+        }
 
-    if (installButton) {
-        installButton.hidden = true;
+        deferredPrompt.prompt();
+
+        await deferredPrompt.userChoice;
+
+        deferredPrompt = null;
     }
-});
+);
+
+window.addEventListener(
+    "appinstalled",
+    function () {
+
+        deferredPrompt = null;
+
+        if (installButton) {
+            installButton.hidden = true;
+        }
+    }
+);
+
 
 // ==========================================
 // RESETAR BOTÕES
@@ -168,9 +184,7 @@ function resetRoomButtons() {
 
 
     const joinButton =
-        document.getElementById(
-            "joinButton"
-        );
+        document.getElementById("joinButton");
 
     if (joinButton) {
 
@@ -181,6 +195,7 @@ function resetRoomButtons() {
             false;
     }
 }
+
 
 // ==========================================
 // TEMA DO JOGADOR
@@ -207,6 +222,11 @@ function applyPlayerTheme() {
     }
 }
 
+
+// ==========================================
+// TEMA ESCURO
+// ==========================================
+
 const themeToggle =
     document.getElementById("themeToggle");
 
@@ -220,20 +240,24 @@ if (themeToggle) {
                 "dark"
             );
 
-             if (document.body.classList.contains("dark")) {
+            if (
+                document.body.classList.contains(
+                    "dark"
+                )
+            ) {
 
-                themeToggle.textContent = "☾";
+                themeToggle.textContent =
+                    "☾";
 
             } else {
 
-                themeToggle.textContent = "☀";
-
+                themeToggle.textContent =
+                    "☀";
             }
-
         }
     );
-
 }
+
 
 // ==========================================
 // VOLTAR PARA O LOBBY
@@ -277,6 +301,7 @@ function backToRoomChoice() {
     }
 }
 
+
 // ==========================================
 // GERAR CÓDIGO DA SALA
 // ==========================================
@@ -315,23 +340,15 @@ function createRoom() {
         );
 
 
-    // ======================================
-    // GARANTIR ESTADO LIMPO
-    // ======================================
-
     if (connectionTimeout) {
 
         clearTimeout(
             connectionTimeout
         );
 
-        connectionTimeout =
-            null;
+        connectionTimeout = null;
     }
 
-
-    // Se ainda existir um socket antigo,
-    // fecha antes de criar outro.
 
     if (socket) {
 
@@ -339,14 +356,9 @@ function createRoom() {
             socket.close();
         } catch (error) {}
 
-        socket =
-            null;
+        socket = null;
     }
 
-
-    // ======================================
-    // BLOQUEAR BOTÃO
-    // ======================================
 
     if (button) {
 
@@ -358,27 +370,19 @@ function createRoom() {
     }
 
 
-    // ======================================
-    // GERAR NOVA SALA
-    // ======================================
-
     const code =
         generateRoomCode();
-
 
     roomCode =
         code;
 
-
-    // ======================================
-    // CRIAR CONEXÃO
-    // ======================================
 
     connectToRoom(
         code,
         "create"
     );
 }
+
 
 // ==========================================
 // MOSTRAR TELA DE ENTRAR
@@ -410,60 +414,20 @@ function showJoinRoom() {
 // INPUT DO CÓDIGO
 // ==========================================
 
-joinRoomCode.addEventListener(
-    "input",
-    function () {
+if (joinRoomCode) {
 
-        this.value =
-            this.value
-                .toUpperCase()
-                .replace(/[^A-Z0-9]/g, "")
-                .slice(0, 4);
-    }
-);
-
-
-// ==========================================
-// ENTRAR NA SALA
-// ==========================================
-
-function showJoinRoom() {
-
-    resetRoomButtons();
-
-    joinRoomCode.value =
-        "";
-
-    showScreen(
-        joinRoomScreen
-    );
-
-    setTimeout(
+    joinRoomCode.addEventListener(
+        "input",
         function () {
 
-            joinRoomCode.focus();
-
-        },
-        50
+            this.value =
+                this.value
+                    .toUpperCase()
+                    .replace(/[^A-Z0-9]/g, "")
+                    .slice(0, 4);
+        }
     );
 }
-
-
-// ==========================================
-// INPUT DO CÓDIGO
-// ==========================================
-
-joinRoomCode.addEventListener(
-    "input",
-    function () {
-
-        this.value =
-            this.value
-                .toUpperCase()
-                .replace(/[^A-Z0-9]/g, "")
-                .slice(0, 4);
-    }
-);
 
 
 // ==========================================
@@ -580,52 +544,50 @@ function connectToRoom(
 
     // ======================================
     // LIMITE DE 5 SEGUNDOS
-    // Se o Render estiver acordando,
-    // tenta conectar novamente.
     // ======================================
 
-connectionTimeout =
-    setTimeout(
-        function () {
+    connectionTimeout =
+        setTimeout(
+            function () {
 
-            if (
-                socket === newSocket &&
-                socketGeneration === currentGeneration &&
-                newSocket.readyState === WebSocket.CONNECTING
-            ) {
+                if (
+                    socket === newSocket &&
+                    socketGeneration === currentGeneration &&
+                    newSocket.readyState === WebSocket.CONNECTING
+                ) {
 
-                console.log(
-                    "Servidor demorou. Tentando novamente..."
-                );
-
-                try {
-                    newSocket.close();
-                } catch (error) {}
-
-                socket = null;
-
-                retryTimer =
-                    setTimeout(
-                        function () {
-
-                            retryTimer = null;
-
-                            connectToRoom(
-                                code,
-                                action
-                            );
-
-                        },
-                        1500
+                    console.log(
+                        "Servidor demorou. Tentando novamente..."
                     );
-            }
 
-            connectionTimeout =
-                null;
+                    try {
+                        newSocket.close();
+                    } catch (error) {}
 
-        },
-        5000
-    );
+                    socket = null;
+
+                    retryTimer =
+                        setTimeout(
+                            function () {
+
+                                retryTimer = null;
+
+                                connectToRoom(
+                                    code,
+                                    action
+                                );
+
+                            },
+                            1500
+                        );
+                }
+
+                connectionTimeout =
+                    null;
+
+            },
+            5000
+        );
 
 
     // ======================================
@@ -785,6 +747,7 @@ connectionTimeout =
             }
         };
 }
+
 
 // ==========================================
 // MENSAGENS DO SERVIDOR
@@ -952,9 +915,7 @@ function handleServerMessage(data) {
         if (socket) {
 
             try {
-
                 socket.close();
-
             } catch (error) {}
 
             socket = null;
@@ -1229,6 +1190,13 @@ function leaveRoom() {
 
 
     // ======================================
+    // LIMPAR DRAG ANTES DE SAIR
+    // ======================================
+
+    cleanupDragState();
+
+
+    // ======================================
     // INVALIDAR CONEXÃO ATUAL
     // ======================================
 
@@ -1248,9 +1216,6 @@ function leaveRoom() {
     // ======================================
 
     if (oldSocket) {
-
-        // Se já estiver conectado,
-        // avisa o servidor antes de sair.
 
         if (
             oldSocket.readyState ===
@@ -1275,9 +1240,6 @@ function leaveRoom() {
         }
 
 
-        // Fecha o socket independentemente
-        // do estado em que ele estiver.
-
         try {
 
             oldSocket.close(
@@ -1290,7 +1252,7 @@ function leaveRoom() {
 
 
     // ======================================
-    // LIMPAR ESTADO LOCAL DA SALA
+    // LIMPAR ESTADO LOCAL
     // ======================================
 
     roomCode =
@@ -1316,7 +1278,7 @@ function leaveRoom() {
 
 
     // ======================================
-    // RESETAR TABULEIRO DE CONFIGURAÇÃO
+    // RESETAR TABULEIRO
     // ======================================
 
     boardImages = [
@@ -1361,6 +1323,7 @@ function leaveRoom() {
     );
 }
 
+
 // ==========================================
 // ABRIR CONFIGURAÇÃO
 // ==========================================
@@ -1396,15 +1359,122 @@ let boardImages = [
 
 
 // ==========================================
-// COMPRIMIR IMAGEM
+// ESTADO GLOBAL DO DRAG
 // ==========================================
 //
-// Aceita imagens grandes e transforma em uma
-// versão menor antes de guardar em boardImages.
-//
-// Limite:
-// maior lado = 800 px
-// qualidade JPEG = 75%
+// Isso evita que uma miniatura fique presa
+// quando o DOM dos slots é recriado.
+// ==========================================
+
+let activeDragPreview = null;
+let activeDragSlot = null;
+let activeDragPointerId = null;
+
+
+// ==========================================
+// REMOVER MINIATURA ATIVA
+// ==========================================
+
+function removeActiveDragPreview() {
+
+    if (activeDragPreview) {
+
+        activeDragPreview.remove();
+
+        activeDragPreview =
+            null;
+    }
+}
+
+
+// ==========================================
+// LIMPAR ESTADO GLOBAL DO DRAG
+// ==========================================
+
+function cleanupDragState() {
+
+    removeActiveDragPreview();
+
+
+    if (activeDragSlot) {
+
+        activeDragSlot.classList.remove(
+            "dragging"
+        );
+    }
+
+
+    document
+        .querySelectorAll(".image-slot")
+        .forEach(
+            function (item) {
+
+                item.classList.remove(
+                    "drag-over"
+                );
+
+                item.classList.remove(
+                    "dragging"
+                );
+            }
+        );
+
+
+    activeDragSlot =
+        null;
+
+    activeDragPointerId =
+        null;
+}
+
+
+// ==========================================
+// LIMPAR DRAG SE A JANELA PERDER FOCO
+// ==========================================
+
+window.addEventListener(
+    "blur",
+    function () {
+
+        cleanupDragState();
+    }
+);
+
+
+// ==========================================
+// LIMPAR DRAG SE A PÁGINA FICAR OCULTA
+// ==========================================
+
+document.addEventListener(
+    "visibilitychange",
+    function () {
+
+        if (document.hidden) {
+
+            cleanupDragState();
+        }
+    }
+);
+
+
+// ==========================================
+// ESC PARA CANCELAR DRAG
+// ==========================================
+
+document.addEventListener(
+    "keydown",
+    function (event) {
+
+        if (event.key === "Escape") {
+
+            cleanupDragState();
+        }
+    }
+);
+
+
+// ==========================================
+// COMPRIMIR IMAGEM
 // ==========================================
 
 function compressImage(file) {
@@ -1436,10 +1506,6 @@ function compressImage(file) {
                             let height =
                                 img.height;
 
-
-                            // ==================================
-                            // REDIMENSIONAR
-                            // ==================================
 
                             if (
                                 width > maxSize ||
@@ -1475,10 +1541,6 @@ function compressImage(file) {
                             }
 
 
-                            // ==================================
-                            // CANVAS
-                            // ==================================
-
                             const canvas =
                                 document.createElement(
                                     "canvas"
@@ -1510,9 +1572,6 @@ function compressImage(file) {
                             }
 
 
-                            // Fundo branco para imagens
-                            // que possuam transparência.
-
                             ctx.fillStyle =
                                 "#ffffff";
 
@@ -1532,10 +1591,6 @@ function compressImage(file) {
                                 height
                             );
 
-
-                            // ==================================
-                            // COMPRIMIR
-                            // ==================================
 
                             const compressed =
                                 canvas.toDataURL(
@@ -1598,7 +1653,15 @@ function compressImage(file) {
 
 function createImageSlots() {
 
-    imageGrid.innerHTML = "";
+    // Muito importante:
+    // remove qualquer preview antigo ANTES
+    // de destruir o conteúdo do grid.
+
+    cleanupDragState();
+
+
+    imageGrid.innerHTML =
+        "";
 
 
     for (let i = 0; i < 6; i++) {
@@ -1613,6 +1676,13 @@ function createImageSlots() {
 
         slot.dataset.position =
             i;
+
+
+        // Impede o navegador de interpretar
+        // o toque como gesto próprio.
+
+        slot.style.touchAction =
+            "none";
 
 
         // ==================================
@@ -1654,10 +1724,12 @@ function createImageSlots() {
                 boardImages[i];
 
 
-            // Impede a imagem de ser
-            // arrastada pelo navegador.
             img.draggable =
                 false;
+
+
+            img.style.pointerEvents =
+                "none";
 
 
             slot.appendChild(
@@ -1709,6 +1781,9 @@ function createImageSlots() {
                     event.stopPropagation();
 
 
+                    cleanupDragState();
+
+
                     boardImages[i] =
                         null;
 
@@ -1734,6 +1809,10 @@ function createImageSlots() {
 
             plus.textContent =
                 "+";
+
+
+            plus.style.pointerEvents =
+                "none";
 
 
             slot.appendChild(
@@ -1793,28 +1872,20 @@ function createImageSlots() {
 
 
         // ==================================
-        // ARRASTAR
+        // ESTADO LOCAL DO DRAG
         // ==================================
 
         let dragging =
             false;
 
-
         let startX =
             0;
-
 
         let startY =
             0;
 
-
         let currentTarget =
             null;
-
-
-        let dragPreview =
-            null;
-
 
         const DRAG_DISTANCE =
             8;
@@ -1831,57 +1902,67 @@ function createImageSlots() {
             }
 
 
-            dragPreview =
+            // Remove qualquer preview anterior
+            // antes de criar o novo.
+
+            removeActiveDragPreview();
+
+
+            const preview =
                 document.createElement("img");
 
 
-            dragPreview.src =
+            preview.src =
                 boardImages[i];
 
 
-            dragPreview.draggable =
+            preview.draggable =
                 false;
 
 
-            dragPreview.style.position =
+            preview.style.position =
                 "fixed";
 
 
-            dragPreview.style.width =
+            preview.style.width =
                 "70px";
 
 
-            dragPreview.style.height =
+            preview.style.height =
                 "70px";
 
 
-            dragPreview.style.objectFit =
+            preview.style.objectFit =
                 "cover";
 
 
-            dragPreview.style.borderRadius =
+            preview.style.borderRadius =
                 "14px";
 
 
-            dragPreview.style.pointerEvents =
+            preview.style.pointerEvents =
                 "none";
 
 
-            dragPreview.style.zIndex =
+            preview.style.zIndex =
                 "99999";
 
 
-            dragPreview.style.boxShadow =
+            preview.style.boxShadow =
                 "0 6px 18px rgba(0,0,0,0.25)";
 
 
-            dragPreview.style.transform =
+            preview.style.transform =
                 "translate(-50%, -120%) scale(1.05)";
 
 
             document.body.appendChild(
-                dragPreview
+                preview
             );
+
+
+            activeDragPreview =
+                preview;
         }
 
 
@@ -1894,33 +1975,17 @@ function createImageSlots() {
             y
         ) {
 
-            if (!dragPreview) {
+            if (!activeDragPreview) {
                 return;
             }
 
 
-            dragPreview.style.left =
+            activeDragPreview.style.left =
                 x + "px";
 
 
-            dragPreview.style.top =
+            activeDragPreview.style.top =
                 y + "px";
-        }
-
-
-        // ==================================
-        // REMOVER MINIATURA
-        // ==================================
-
-        function removeDragPreview() {
-
-            if (dragPreview) {
-
-                dragPreview.remove();
-
-                dragPreview =
-                    null;
-            }
         }
 
 
@@ -1944,6 +2009,19 @@ function createImageSlots() {
                 if (!boardImages[i]) {
                     return;
                 }
+
+
+                // Se outro drag ainda existir,
+                // elimina o estado antigo.
+
+                cleanupDragState();
+
+
+                activeDragSlot =
+                    slot;
+
+                activeDragPointerId =
+                    event.pointerId;
 
 
                 startX =
@@ -2024,9 +2102,6 @@ function createImageSlots() {
                     );
 
 
-                    // Cria a miniatura
-                    // somente quando realmente
-                    // começou a arrastar.
                     createDragPreview();
                 }
 
@@ -2039,8 +2114,6 @@ function createImageSlots() {
                 event.preventDefault();
 
 
-                // A miniatura acompanha
-                // o dedo/mouse.
                 moveDragPreview(
                     event.clientX,
                     event.clientY
@@ -2066,7 +2139,6 @@ function createImageSlots() {
                         : null;
 
 
-                // Limpa os destaques.
                 document
                     .querySelectorAll(
                         ".image-slot"
@@ -2128,6 +2200,18 @@ function createImageSlots() {
             function (event) {
 
                 if (!dragging) {
+
+                    activeDragSlot = null;
+                    activeDragPointerId = null;
+
+                    try {
+
+                        slot.releasePointerCapture(
+                            event.pointerId
+                        );
+
+                    } catch (error) {}
+
                     return;
                 }
 
@@ -2135,29 +2219,30 @@ function createImageSlots() {
                 event.preventDefault();
 
 
-                slot.classList.remove(
-                    "dragging"
-                );
+                // ==================================
+                // GUARDAR ALVO ANTES DA LIMPEZA
+                // ==================================
+
+                const targetPosition =
+                    currentTarget;
 
 
-                document
-                    .querySelectorAll(
-                        ".image-slot"
-                    )
-                    .forEach(
-                        function (item) {
+                // ==================================
+                // LIMPAR DRAG ANTES DE RECRIAR DOM
+                // ==================================
 
-                            item.classList.remove(
-                                "drag-over"
-                            );
-                        }
-                    );
+                cleanupDragState();
 
 
-                // Troca as imagens.
+                // ==================================
+                // TROCAR IMAGENS
+                // ==================================
+
                 if (
-                    currentTarget !== null &&
-                    currentTarget !== i
+                    targetPosition !== null &&
+                    targetPosition !== i &&
+                    targetPosition >= 0 &&
+                    targetPosition < 6
                 ) {
 
                     const temp =
@@ -2166,21 +2251,19 @@ function createImageSlots() {
 
                     boardImages[i] =
                         boardImages[
-                            currentTarget
+                            targetPosition
                         ];
 
 
                     boardImages[
-                        currentTarget
+                        targetPosition
                     ] =
                         temp;
 
 
+                    // O cleanup acontece antes daqui.
                     createImageSlots();
                 }
-
-
-                removeDragPreview();
 
 
                 dragging =
@@ -2218,26 +2301,29 @@ function createImageSlots() {
                     null;
 
 
-                slot.classList.remove(
-                    "dragging"
-                );
+                cleanupDragState();
+            }
+        );
 
 
-                document
-                    .querySelectorAll(
-                        ".image-slot"
-                    )
-                    .forEach(
-                        function (item) {
+        // ==================================
+        // PERDA DO POINTER CAPTURE
+        // ==================================
 
-                            item.classList.remove(
-                                "drag-over"
-                            );
-                        }
-                    );
+        slot.addEventListener(
+            "lostpointercapture",
+            function () {
 
+                if (dragging) {
 
-                removeDragPreview();
+                    dragging =
+                        false;
+
+                    currentTarget =
+                        null;
+
+                    cleanupDragState();
+                }
             }
         );
 
@@ -2247,8 +2333,8 @@ function createImageSlots() {
         );
     }
 }
-                
-                    
+
+
 // ==========================================
 // COMPATIBILIDADE COM O HTML
 // ==========================================
@@ -2263,7 +2349,6 @@ function loadImage(
 
     // ==================================
     // ARQUIVO DIRETO
-    // Usado ao colar uma imagem
     // ==================================
 
     if (
@@ -2274,9 +2359,6 @@ function loadImage(
             eventOrFile
         ];
 
-
-        // Se não foi indicada uma posição,
-        // usa o primeiro slot vazio.
 
         if (
             typeof position !== "number"
@@ -2325,6 +2407,7 @@ function loadImage(
                 eventOrFile.target.files
             );
     }
+
 
     // ==================================
     // UMA IMAGEM
@@ -2430,6 +2513,7 @@ function loadImage(
     );
 }
 
+
 // ==========================================
 // BOTÃO "PRONTO"
 // ==========================================
@@ -2460,6 +2544,7 @@ function finishSetup() {
     boardConfirmed();
 }
 
+
 // ==========================================
 // POPUP
 // ==========================================
@@ -2482,21 +2567,15 @@ function openPopup(
 
 
     const popupTitle =
-        gamePopup.querySelector(
-            "h2"
-        );
+        gamePopup.querySelector("h2");
 
 
     const popupMessage =
-        gamePopup.querySelector(
-            "p"
-        );
+        gamePopup.querySelector("p");
 
 
     const popupActions =
-        gamePopup.querySelector(
-            ".popup-actions"
-        );
+        gamePopup.querySelector(".popup-actions");
 
 
     popupTitle.textContent =
@@ -2507,13 +2586,16 @@ function openPopup(
         message;
 
 
-    // Limpar elementos antigos residuais
-    const popupContent = gamePopup.querySelector(".game-popup");
+    const popupContent =
+        gamePopup.querySelector(".game-popup");
+
 
     if (popupContent) {
 
         const oldInput =
-            popupContent.querySelector("#restoreCodeInput");
+            popupContent.querySelector(
+                "#restoreCodeInput"
+            );
 
         if (oldInput) {
             oldInput.remove();
@@ -2521,7 +2603,9 @@ function openPopup(
 
 
         const oldCode =
-            popupContent.querySelector(".saved-game-code");
+            popupContent.querySelector(
+                ".saved-game-code"
+            );
 
         if (oldCode) {
             oldCode.remove();
@@ -2529,7 +2613,9 @@ function openPopup(
 
 
         const oldBetGrid =
-            popupContent.querySelector(".bet-popup-grid");
+            popupContent.querySelector(
+                ".bet-popup-grid"
+            );
 
         if (oldBetGrid) {
             oldBetGrid.remove();
@@ -2537,7 +2623,9 @@ function openPopup(
 
 
         const oldCharacterImage =
-            popupContent.querySelector(".popup-character-image");
+            popupContent.querySelector(
+                ".popup-character-image"
+            );
 
         if (oldCharacterImage) {
             oldCharacterImage.remove();
@@ -2545,126 +2633,127 @@ function openPopup(
     }
 
 
-        popupCallback =
-            callback;
+    popupCallback =
+        callback;
 
 
-        popupBoard.style.display =
-            showBoard
-                ? "grid"
-                : "none";
+    popupBoard.style.display =
+        showBoard
+            ? "grid"
+            : "none";
 
 
-        popupActions.innerHTML =
-            "";
+    popupActions.innerHTML =
+        "";
 
 
-        if (buttonText) {
+    if (buttonText) {
 
-            const button =
-                document.createElement(
-                    "button"
-                );
-
-
-            button.className =
-                "popup-button";
+        const button =
+            document.createElement(
+                "button"
+            );
 
 
-            button.textContent =
-                buttonText;
+        button.className =
+            "popup-button";
 
 
-            button.addEventListener(
-                "click",
-                function () {
-
-                    const callbackToRun =
-                        popupCallback;
+        button.textContent =
+            buttonText;
 
 
-                    closePopup();
+        button.addEventListener(
+            "click",
+            function () {
+
+                const callbackToRun =
+                    popupCallback;
 
 
-                    if (callbackToRun) {
+                closePopup();
 
-                        callbackToRun();
-                    }
+
+                if (callbackToRun) {
+
+                    callbackToRun();
                 }
-            );
+            }
+        );
 
 
-            popupActions.appendChild(
-                button
-            );
-        }
-
-
-        if (showBoard) {
-
-            const modify =
-                document.createElement(
-                    "button"
-                );
-
-
-            modify.className =
-                "popup-button secondary";
-
-
-            modify.textContent =
-                "MODIFICAR TABULEIRO";
-
-
-            modify.addEventListener(
-                "click",
-                function () {
-
-                    closePopup();
-                }
-            );
-
-
-            const confirm =
-                document.createElement(
-                    "button"
-                );
-
-
-            confirm.className =
-                "popup-button";
-
-
-            confirm.textContent =
-                "CONFIRMAR";
-
-
-            confirm.addEventListener(
-                "click",
-                function () {
-
-                    closePopup();
-
-                    boardConfirmed();
-                }
-            );
-
-
-            popupActions.appendChild(
-                modify
-            );
-
-
-            popupActions.appendChild(
-                confirm
-            );
-        }
-
-
-        gamePopup.classList.add(
-            "active"
+        popupActions.appendChild(
+            button
         );
     }
+
+
+    if (showBoard) {
+
+        const modify =
+            document.createElement(
+                "button"
+            );
+
+
+        modify.className =
+            "popup-button secondary";
+
+
+        modify.textContent =
+            "MODIFICAR TABULEIRO";
+
+
+        modify.addEventListener(
+            "click",
+            function () {
+
+                closePopup();
+            }
+        );
+
+
+        const confirm =
+            document.createElement(
+                "button"
+            );
+
+
+        confirm.className =
+            "popup-button";
+
+
+        confirm.textContent =
+            "CONFIRMAR";
+
+
+        confirm.addEventListener(
+            "click",
+            function () {
+
+                closePopup();
+
+                boardConfirmed();
+            }
+        );
+
+
+        popupActions.appendChild(
+            modify
+        );
+
+
+        popupActions.appendChild(
+            confirm
+        );
+    }
+
+
+    gamePopup.classList.add(
+        "active"
+    );
+}
+
 
 // ==========================================
 // FECHAR POPUP
@@ -2807,17 +2896,31 @@ function leaveSetup() {
 
 
 // ==========================================
-// SALVAR E RESGATAR TABULEIRO NA CRIAÇÃO (ITEM 8)
+// SALVAR E RESGATAR TABULEIRO
 // ==========================================
 
-document.addEventListener("DOMContentLoaded", function () {
-    const btn = document.getElementById("createSaveBoardButton");
-    if (btn) {
-        btn.addEventListener("click", openSaveOrRestoreBoardPopup);
+document.addEventListener(
+    "DOMContentLoaded",
+    function () {
+
+        const btn =
+            document.getElementById(
+                "createSaveBoardButton"
+            );
+
+        if (btn) {
+
+            btn.addEventListener(
+                "click",
+                openSaveOrRestoreBoardPopup
+            );
+        }
     }
-});
+);
+
 
 function openSaveOrRestoreBoardPopup() {
+
     openPopup(
         "SALVAR OU RESGATAR TABULEIRO",
         "Deseja gerar um código para o seu tabuleiro atual ou resgatar um tabuleiro salvo por código?",
@@ -2825,49 +2928,124 @@ function openSaveOrRestoreBoardPopup() {
         false
     );
 
-    const popupActions = gamePopup.querySelector(".popup-actions");
+
+    const popupActions =
+        gamePopup.querySelector(
+            ".popup-actions"
+        );
+
+
     if (popupActions) {
-        popupActions.innerHTML = "";
 
-        const restoreBtn = document.createElement("button");
-        restoreBtn.className = "popup-button secondary";
-        restoreBtn.textContent = "RESGATAR CÓDIGO";
-        restoreBtn.onclick = function () {
-            closePopup();
-            handleRestoreBoardCode();
-        };
+        popupActions.innerHTML =
+            "";
 
-        const saveBtn = document.createElement("button");
-        saveBtn.className = "popup-button";
-        saveBtn.textContent = "SALVAR E GERAR CÓDIGO";
-        saveBtn.onclick = function () {
-            closePopup();
-            handleSaveBoardCode();
-        };
 
-        popupActions.appendChild(restoreBtn);
-        popupActions.appendChild(saveBtn);
+        const restoreBtn =
+            document.createElement(
+                "button"
+            );
+
+
+        restoreBtn.className =
+            "popup-button secondary";
+
+
+        restoreBtn.textContent =
+            "RESGATAR CÓDIGO";
+
+
+        restoreBtn.onclick =
+            function () {
+
+                closePopup();
+
+                handleRestoreBoardCode();
+            };
+
+
+        const saveBtn =
+            document.createElement(
+                "button"
+            );
+
+
+        saveBtn.className =
+            "popup-button";
+
+
+        saveBtn.textContent =
+            "SALVAR E GERAR CÓDIGO";
+
+
+        saveBtn.onclick =
+            function () {
+
+                closePopup();
+
+                handleSaveBoardCode();
+            };
+
+
+        popupActions.appendChild(
+            restoreBtn
+        );
+
+
+        popupActions.appendChild(
+            saveBtn
+        );
     }
 }
 
+
 function handleSaveBoardCode() {
-    const hasImage = boardImages.some(function (img) { return img !== null; });
+
+    const hasImage =
+        boardImages.some(
+            function (img) {
+                return img !== null;
+            }
+        );
+
+
     if (!hasImage) {
+
         openPopup(
             "TABULEIRO VAZIO",
             "Adicione pelo menos uma imagem ao tabuleiro antes de salvar.",
             null,
             "OK"
         );
+
         return;
     }
 
-    const code = "TAB" + Math.floor(1000 + Math.random() * 9000);
+
+    const code =
+        "TAB" +
+        Math.floor(
+            1000 +
+            Math.random() *
+            9000
+        );
+
+
     try {
-        localStorage.setItem("saved_board_" + code, JSON.stringify(boardImages));
+
+        localStorage.setItem(
+            "saved_board_" + code,
+            JSON.stringify(boardImages)
+        );
+
     } catch (e) {
-        console.error("Erro ao salvar no localStorage", e);
+
+        console.error(
+            "Erro ao salvar no localStorage",
+            e
+        );
     }
+
 
     openPopup(
         "TABULEIRO SALVO!",
@@ -2876,30 +3054,87 @@ function handleSaveBoardCode() {
         "FECHAR"
     );
 
-    const popupContent = gamePopup.querySelector(".game-popup");
-    const popupActions = popupContent.querySelector(".popup-actions");
 
-    let codeElement = popupContent.querySelector(".saved-game-code");
+    const popupContent =
+        gamePopup.querySelector(
+            ".game-popup"
+        );
+
+
+    const popupActions =
+        popupContent.querySelector(
+            ".popup-actions"
+        );
+
+
+    let codeElement =
+        popupContent.querySelector(
+            ".saved-game-code"
+        );
+
+
     if (!codeElement) {
-        codeElement = document.createElement("div");
-        codeElement.className = "saved-game-code";
-        popupContent.insertBefore(codeElement, popupActions);
+
+        codeElement =
+            document.createElement(
+                "div"
+            );
+
+
+        codeElement.className =
+            "saved-game-code";
+
+
+        popupContent.insertBefore(
+            codeElement,
+            popupActions
+        );
     }
-    codeElement.textContent = code;
+
+
+    codeElement.textContent =
+        code;
+
 
     if (popupActions) {
-        const copyBtn = document.createElement("button");
-        copyBtn.className = "popup-button secondary";
-        copyBtn.textContent = "📋 COPIAR CÓDIGO";
-        copyBtn.onclick = function () {
-            navigator.clipboard.writeText(code);
-            copyBtn.textContent = "✓ COPIADO!";
-        };
-        popupActions.insertBefore(copyBtn, popupActions.firstChild);
+
+        const copyBtn =
+            document.createElement(
+                "button"
+            );
+
+
+        copyBtn.className =
+            "popup-button secondary";
+
+
+        copyBtn.textContent =
+            "📋 COPIAR CÓDIGO";
+
+
+        copyBtn.onclick =
+            function () {
+
+                navigator.clipboard.writeText(
+                    code
+                );
+
+
+                copyBtn.textContent =
+                    "✓ COPIADO!";
+            };
+
+
+        popupActions.insertBefore(
+            copyBtn,
+            popupActions.firstChild
+        );
     }
 }
 
+
 function handleRestoreBoardCode() {
+
     openPopup(
         "RESGATAR TABULEIRO",
         "Digite o código do tabuleiro salvo abaixo:",
@@ -2907,65 +3142,161 @@ function handleRestoreBoardCode() {
         "CANCELAR"
     );
 
-    const popupContent = gamePopup.querySelector(".game-popup");
-    const popupActions = popupContent.querySelector(".popup-actions");
 
-    const input = document.createElement("input");
-    input.type = "text";
-    input.id = "restoreCodeInput";
-    input.placeholder = "EX: TAB1234";
-    input.style.cssText = "width: 80%; padding: 10px; font-size: 1.1rem; border-radius: 8px; border: 2px solid #ccc; text-align: center; text-transform: uppercase; margin: 15px auto; display: block;";
+    const popupContent =
+        gamePopup.querySelector(
+            ".game-popup"
+        );
 
-    popupContent.insertBefore(input, popupActions);
 
-    setTimeout(function() { input.focus(); }, 100);
+    const popupActions =
+        popupContent.querySelector(
+            ".popup-actions"
+        );
 
-    const confirmBtn = document.createElement("button");
-    confirmBtn.className = "popup-button";
-    confirmBtn.textContent = "CARREGAR";
-    confirmBtn.onclick = function () {
-        const codeVal = input.value.trim().toUpperCase();
-        if (!codeVal) return;
 
-        let saved = null;
-        try {
-            saved = localStorage.getItem("saved_board_" + codeVal);
-        } catch (e) {}
+    const input =
+        document.createElement(
+            "input"
+        );
 
-        if (!saved) {
-            openPopup(
-                "CÓDIGO NÃO ENCONTRADO",
-                "Nenhum tabuleiro foi encontrado com o código: " + codeVal,
-                null,
-                "OK"
-            );
-            return;
-        }
 
-        try {
-            const images = JSON.parse(saved);
-            if (Array.isArray(images) && images.length === 6) {
-                boardImages = images;
-                createImageSlots();
+    input.type =
+        "text";
+
+
+    input.id =
+        "restoreCodeInput";
+
+
+    input.placeholder =
+        "EX: TAB1234";
+
+
+    input.style.cssText =
+        "width: 80%; padding: 10px; font-size: 1.1rem; border-radius: 8px; border: 2px solid #ccc; text-align: center; text-transform: uppercase; margin: 15px auto; display: block;";
+
+
+    popupContent.insertBefore(
+        input,
+        popupActions
+    );
+
+
+    setTimeout(
+        function () {
+
+            input.focus();
+
+        },
+        100
+    );
+
+
+    const confirmBtn =
+        document.createElement(
+            "button"
+        );
+
+
+    confirmBtn.className =
+        "popup-button";
+
+
+    confirmBtn.textContent =
+        "CARREGAR";
+
+
+    confirmBtn.onclick =
+        function () {
+
+            const codeVal =
+                input.value
+                    .trim()
+                    .toUpperCase();
+
+
+            if (!codeVal) {
+                return;
+            }
+
+
+            let saved =
+                null;
+
+
+            try {
+
+                saved =
+                    localStorage.getItem(
+                        "saved_board_" +
+                        codeVal
+                    );
+
+            } catch (e) {}
+
+
+            if (!saved) {
+
                 openPopup(
-                    "TABULEIRO CARREGADO!",
-                    "O tabuleiro " + codeVal + " foi carregado com sucesso.",
+                    "CÓDIGO NÃO ENCONTRADO",
+                    "Nenhum tabuleiro foi encontrado com o código: " +
+                    codeVal,
+                    null,
+                    "OK"
+                );
+
+                return;
+            }
+
+
+            try {
+
+                const images =
+                    JSON.parse(
+                        saved
+                    );
+
+
+                if (
+                    Array.isArray(images) &&
+                    images.length === 6
+                ) {
+
+                    boardImages =
+                        images;
+
+
+                    createImageSlots();
+
+
+                    openPopup(
+                        "TABULEIRO CARREGADO!",
+                        "O tabuleiro " +
+                        codeVal +
+                        " foi carregado com sucesso.",
+                        null,
+                        "OK"
+                    );
+                }
+
+            } catch (e) {
+
+                openPopup(
+                    "ERRO AO CARREGAR",
+                    "Ocorreu um erro ao carregar o tabuleiro salvo.",
                     null,
                     "OK"
                 );
             }
-        } catch (e) {
-            openPopup(
-                "ERRO AO CARREGAR",
-                "Ocorreu um erro ao carregar o tabuleiro salvo.",
-                null,
-                "OK"
-            );
-        }
-    };
+        };
 
-    popupActions.appendChild(confirmBtn);
+
+    popupActions.appendChild(
+        confirmBtn
+    );
 }
+
 
 // ==========================================
 // ADICIONAR IMAGEM PELO GOOGLE / COLAR
@@ -3007,6 +3338,7 @@ if (imageSearchButton) {
                     ? imageSearchInput.value.trim()
                     : "";
 
+
             if (!pesquisa) {
 
                 if (imageSearchStatus) {
@@ -3021,16 +3353,19 @@ if (imageSearchButton) {
                 return;
             }
 
+
             const url =
                 "https://www.google.com/search?tbm=isch&q=" +
                 encodeURIComponent(
                     pesquisa
                 );
 
+
             window.open(
                 url,
                 "_blank"
             );
+
 
             if (imageSearchStatus) {
 
@@ -3044,6 +3379,7 @@ if (imageSearchButton) {
     );
 }
 
+
 // ==========================================
 // FECHAR JANELA DO GOOGLE
 // ==========================================
@@ -3052,6 +3388,7 @@ const closeGoogleSearch =
     document.getElementById(
         "closeGoogleSearch"
     );
+
 
 if (closeGoogleSearch) {
 
@@ -3064,16 +3401,19 @@ if (closeGoogleSearch) {
                     "googleSearchWindow"
                 );
 
+
             const googleSearchFrame =
                 document.getElementById(
                     "googleSearchFrame"
                 );
+
 
             if (googleSearchWindow) {
 
                 googleSearchWindow.style.display =
                     "none";
             }
+
 
             if (googleSearchFrame) {
 
@@ -3083,6 +3423,7 @@ if (closeGoogleSearch) {
         }
     );
 }
+
 
 // ==========================================
 // COLAR IMAGEM
@@ -3094,6 +3435,7 @@ async function colarImagem() {
 
         const itens =
             await navigator.clipboard.read();
+
 
         for (const item of itens) {
 
@@ -3107,16 +3449,19 @@ async function colarImagem() {
                     }
                 );
 
+
             if (
                 tiposImagem.length === 0
             ) {
                 continue;
             }
 
+
             const blob =
                 await item.getType(
                     tiposImagem[0]
                 );
+
 
             const arquivo =
                 new File(
@@ -3124,13 +3469,16 @@ async function colarImagem() {
                     "imagem-colada." +
                     tiposImagem[0].split("/")[1],
                     {
-                        type: tiposImagem[0]
+                        type:
+                            tiposImagem[0]
                     }
                 );
+
 
             loadImage(
                 arquivo
             );
+
 
             if (imageSearchStatus) {
 
@@ -3141,8 +3489,10 @@ async function colarImagem() {
                     "block";
             }
 
+
             return;
         }
+
 
         if (imageSearchStatus) {
 
@@ -3153,12 +3503,14 @@ async function colarImagem() {
                 "block";
         }
 
+
     } catch (erro) {
 
         console.error(
             "Erro ao colar imagem:",
             erro
         );
+
 
         if (imageSearchStatus) {
 
@@ -3196,9 +3548,11 @@ document.addEventListener(
         const itens =
             evento.clipboardData?.items;
 
+
         if (!itens) {
             return;
         }
+
 
         for (const item of itens) {
 
@@ -3210,18 +3564,23 @@ document.addEventListener(
                 continue;
             }
 
+
             const arquivo =
                 item.getAsFile();
+
 
             if (!arquivo) {
                 return;
             }
 
+
             evento.preventDefault();
+
 
             loadImage(
                 arquivo
             );
+
 
             if (imageSearchStatus) {
 
@@ -3231,6 +3590,7 @@ document.addEventListener(
                 imageSearchStatus.style.display =
                     "block";
             }
+
 
             return;
         }
