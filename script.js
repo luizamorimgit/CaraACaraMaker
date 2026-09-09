@@ -184,7 +184,9 @@ function resetRoomButtons() {
 
 
     const joinButton =
-        document.getElementById("joinButton");
+        document.getElementById(
+            "joinButton"
+        );
 
     if (joinButton) {
 
@@ -501,10 +503,6 @@ function connectToRoom(
     }
 
 
-    // ======================================
-    // INVALIDAR CONEXÃO ANTERIOR
-    // ======================================
-
     socketGeneration++;
 
     const currentGeneration =
@@ -541,10 +539,6 @@ function connectToRoom(
     socket =
         newSocket;
 
-
-    // ======================================
-    // LIMITE DE 5 SEGUNDOS
-    // ======================================
 
     connectionTimeout =
         setTimeout(
@@ -590,10 +584,6 @@ function connectToRoom(
         );
 
 
-    // ======================================
-    // CONECTADO
-    // ======================================
-
     newSocket.onopen =
         function () {
 
@@ -631,10 +621,6 @@ function connectToRoom(
             }
         };
 
-
-    // ======================================
-    // MENSAGEM
-    // ======================================
 
     newSocket.onmessage =
         function (event) {
@@ -680,10 +666,6 @@ function connectToRoom(
         };
 
 
-    // ======================================
-    // ERRO
-    // ======================================
-
     newSocket.onerror =
         function (error) {
 
@@ -701,10 +683,6 @@ function connectToRoom(
             );
         };
 
-
-    // ======================================
-    // FECHADO
-    // ======================================
 
     newSocket.onclose =
         function (event) {
@@ -760,10 +738,6 @@ function handleServerMessage(data) {
     }
 
 
-    // ======================================
-    // ENTROU NA SALA
-    // ======================================
-
     if (data.type === "joined") {
 
         playerNumber =
@@ -793,10 +767,6 @@ function handleServerMessage(data) {
         return;
     }
 
-
-    // ======================================
-    // ATUALIZAÇÃO DOS JOGADORES
-    // ======================================
 
     if (data.type === "players") {
 
@@ -838,10 +808,6 @@ function handleServerMessage(data) {
         return;
     }
 
-
-    // ======================================
-    // JOGADOR SAIU
-    // ======================================
 
     if (data.type === "player_left") {
 
@@ -906,10 +872,6 @@ function handleServerMessage(data) {
     }
 
 
-    // ======================================
-    // SALA NÃO EXISTE
-    // ======================================
-
     if (data.type === "room_not_found") {
 
         if (socket) {
@@ -951,10 +913,6 @@ function handleServerMessage(data) {
     }
 
 
-    // ======================================
-    // SALA JÁ EXISTE
-    // ======================================
-
     if (data.type === "room_exists") {
 
         if (socket) {
@@ -980,10 +938,6 @@ function handleServerMessage(data) {
         return;
     }
 
-
-    // ======================================
-    // SALA CHEIA
-    // ======================================
 
     if (data.type === "room_full") {
 
@@ -1020,10 +974,6 @@ function handleServerMessage(data) {
     }
 
 
-    // ======================================
-    // AÇÃO INVÁLIDA
-    // ======================================
-
     if (data.type === "invalid_action") {
 
         if (socket) {
@@ -1055,10 +1005,6 @@ function handleServerMessage(data) {
         return;
     }
 
-
-    // ======================================
-    // MENSAGENS DO JOGO
-    // ======================================
 
     if (
         typeof handleGameMessage ===
@@ -1189,16 +1135,8 @@ function leaveRoom() {
     }
 
 
-    // ======================================
-    // LIMPAR DRAG ANTES DE SAIR
-    // ======================================
-
     cleanupDragState();
 
-
-    // ======================================
-    // INVALIDAR CONEXÃO ATUAL
-    // ======================================
 
     socketGeneration++;
 
@@ -1210,10 +1148,6 @@ function leaveRoom() {
     socket =
         null;
 
-
-    // ======================================
-    // AVISAR O SERVIDOR E FECHAR SOCKET
-    // ======================================
 
     if (oldSocket) {
 
@@ -1251,10 +1185,6 @@ function leaveRoom() {
     }
 
 
-    // ======================================
-    // LIMPAR ESTADO LOCAL
-    // ======================================
-
     roomCode =
         "";
 
@@ -1277,10 +1207,6 @@ function leaveRoom() {
         "AGUARDANDO OUTRO JOGADOR...";
 
 
-    // ======================================
-    // RESETAR TABULEIRO
-    // ======================================
-
     boardImages = [
         null,
         null,
@@ -1294,10 +1220,6 @@ function leaveRoom() {
     createImageSlots();
 
 
-    // ======================================
-    // RESETAR ESTADO DA PARTIDA
-    // ======================================
-
     if (
         typeof resetAllGameVariables ===
         "function"
@@ -1307,16 +1229,8 @@ function leaveRoom() {
     }
 
 
-    // ======================================
-    // RESETAR BOTÕES
-    // ======================================
-
     resetRoomButtons();
 
-
-    // ======================================
-    // VOLTAR AO LOBBY
-    // ======================================
 
     showScreen(
         lobby
@@ -1361,30 +1275,9 @@ let boardImages = [
 // ==========================================
 // ESTADO GLOBAL DO DRAG
 // ==========================================
-//
-// Isso evita que uma miniatura fique presa
-// quando o DOM dos slots é recriado.
-// ==========================================
 
-let activeDragPreview = null;
 let activeDragSlot = null;
 let activeDragPointerId = null;
-
-
-// ==========================================
-// REMOVER MINIATURA ATIVA
-// ==========================================
-
-function removeActiveDragPreview() {
-
-    if (activeDragPreview) {
-
-        activeDragPreview.remove();
-
-        activeDragPreview =
-            null;
-    }
-}
 
 
 // ==========================================
@@ -1392,9 +1285,6 @@ function removeActiveDragPreview() {
 // ==========================================
 
 function cleanupDragState() {
-
-    removeActiveDragPreview();
-
 
     if (activeDragSlot) {
 
@@ -1653,10 +1543,6 @@ function compressImage(file) {
 
 function createImageSlots() {
 
-    // Muito importante:
-    // remove qualquer preview antigo ANTES
-    // de destruir o conteúdo do grid.
-
     cleanupDragState();
 
 
@@ -1678,16 +1564,9 @@ function createImageSlots() {
             i;
 
 
-        // Impede o navegador de interpretar
-        // o toque como gesto próprio.
-
         slot.style.touchAction =
             "none";
 
-
-        // ==================================
-        // INPUT DE IMAGEM
-        // ==================================
 
         const input =
             document.createElement("input");
@@ -1709,10 +1588,6 @@ function createImageSlots() {
             input
         );
 
-
-        // ==================================
-        // IMAGEM
-        // ==================================
 
         if (boardImages[i]) {
 
@@ -1736,10 +1611,6 @@ function createImageSlots() {
                 img
             );
 
-
-            // ==================================
-            // BOTÃO EXCLUIR
-            // ==================================
 
             const deleteButton =
                 document.createElement("button");
@@ -1799,10 +1670,6 @@ function createImageSlots() {
 
         } else {
 
-            // ==================================
-            // SLOT VAZIO
-            // ==================================
-
             const plus =
                 document.createElement("span");
 
@@ -1820,10 +1687,6 @@ function createImageSlots() {
             );
         }
 
-
-        // ==================================
-        // CLICAR NO SLOT
-        // ==================================
 
         slot.addEventListener(
             "click",
@@ -1855,10 +1718,6 @@ function createImageSlots() {
         );
 
 
-        // ==================================
-        // ESCOLHER IMAGEM
-        // ==================================
-
         input.addEventListener(
             "change",
             function (event) {
@@ -1870,10 +1729,6 @@ function createImageSlots() {
             }
         );
 
-
-        // ==================================
-        // ESTADO LOCAL DO DRAG
-        // ==================================
 
         let dragging =
             false;
@@ -1892,105 +1747,7 @@ function createImageSlots() {
 
 
         // ==================================
-        // CRIAR MINIATURA
-        // ==================================
-
-        function createDragPreview() {
-
-            if (!boardImages[i]) {
-                return;
-            }
-
-
-            // Remove qualquer preview anterior
-            // antes de criar o novo.
-
-            removeActiveDragPreview();
-
-
-            const preview =
-                document.createElement("img");
-
-
-            preview.src =
-                boardImages[i];
-
-
-            preview.draggable =
-                false;
-
-
-            preview.style.position =
-                "fixed";
-
-
-            preview.style.width =
-                "70px";
-
-
-            preview.style.height =
-                "70px";
-
-
-            preview.style.objectFit =
-                "cover";
-
-
-            preview.style.borderRadius =
-                "14px";
-
-
-            preview.style.pointerEvents =
-                "none";
-
-
-            preview.style.zIndex =
-                "99999";
-
-
-            preview.style.boxShadow =
-                "0 6px 18px rgba(0,0,0,0.25)";
-
-
-            preview.style.transform =
-                "translate(-50%, -120%) scale(1.05)";
-
-
-            document.body.appendChild(
-                preview
-            );
-
-
-            activeDragPreview =
-                preview;
-        }
-
-
-        // ==================================
-        // MOVER MINIATURA
-        // ==================================
-
-        function moveDragPreview(
-            x,
-            y
-        ) {
-
-            if (!activeDragPreview) {
-                return;
-            }
-
-
-            activeDragPreview.style.left =
-                x + "px";
-
-
-            activeDragPreview.style.top =
-                y + "px";
-        }
-
-
-        // ==================================
-        // INÍCIO
+        // INÍCIO DO ARRASTE
         // ==================================
 
         slot.addEventListener(
@@ -2010,9 +1767,6 @@ function createImageSlots() {
                     return;
                 }
 
-
-                // Se outro drag ainda existir,
-                // elimina o estado antigo.
 
                 cleanupDragState();
 
@@ -2063,6 +1817,14 @@ function createImageSlots() {
             "pointermove",
             function (event) {
 
+                if (
+                    activeDragSlot !== slot ||
+                    activeDragPointerId !== event.pointerId
+                ) {
+                    return;
+                }
+
+
                 if (!dragging) {
 
                     const distanceX =
@@ -2100,9 +1862,6 @@ function createImageSlots() {
                     slot.classList.add(
                         "dragging"
                     );
-
-
-                    createDragPreview();
                 }
 
 
@@ -2113,16 +1872,6 @@ function createImageSlots() {
 
                 event.preventDefault();
 
-
-                moveDragPreview(
-                    event.clientX,
-                    event.clientY
-                );
-
-
-                // ==================================
-                // DESCOBRIR SLOT ALVO
-                // ==================================
 
                 const element =
                     document.elementFromPoint(
@@ -2199,10 +1948,15 @@ function createImageSlots() {
             "pointerup",
             function (event) {
 
-                if (!dragging) {
+                if (
+                    activeDragSlot !== slot ||
+                    activeDragPointerId !== event.pointerId
+                ) {
+                    return;
+                }
 
-                    activeDragSlot = null;
-                    activeDragPointerId = null;
+
+                if (!dragging) {
 
                     try {
 
@@ -2212,6 +1966,10 @@ function createImageSlots() {
 
                     } catch (error) {}
 
+
+                    activeDragSlot = null;
+                    activeDragPointerId = null;
+
                     return;
                 }
 
@@ -2219,24 +1977,29 @@ function createImageSlots() {
                 event.preventDefault();
 
 
-                // ==================================
-                // GUARDAR ALVO ANTES DA LIMPEZA
-                // ==================================
-
                 const targetPosition =
                     currentTarget;
 
 
-                // ==================================
-                // LIMPAR DRAG ANTES DE RECRIAR DOM
-                // ==================================
+                dragging =
+                    false;
+
+
+                currentTarget =
+                    null;
+
+
+                try {
+
+                    slot.releasePointerCapture(
+                        event.pointerId
+                    );
+
+                } catch (error) {}
+
 
                 cleanupDragState();
 
-
-                // ==================================
-                // TROCAR IMAGENS
-                // ==================================
 
                 if (
                     targetPosition !== null &&
@@ -2261,26 +2024,8 @@ function createImageSlots() {
                         temp;
 
 
-                    // O cleanup acontece antes daqui.
                     createImageSlots();
                 }
-
-
-                dragging =
-                    false;
-
-
-                currentTarget =
-                    null;
-
-
-                try {
-
-                    slot.releasePointerCapture(
-                        event.pointerId
-                    );
-
-                } catch (error) {}
             }
         );
 
@@ -2291,7 +2036,15 @@ function createImageSlots() {
 
         slot.addEventListener(
             "pointercancel",
-            function () {
+            function (event) {
+
+                if (
+                    activeDragSlot !== slot ||
+                    activeDragPointerId !== event.pointerId
+                ) {
+                    return;
+                }
+
 
                 dragging =
                     false;
@@ -2313,6 +2066,13 @@ function createImageSlots() {
         slot.addEventListener(
             "lostpointercapture",
             function () {
+
+                if (
+                    activeDragSlot !== slot
+                ) {
+                    return;
+                }
+
 
                 if (dragging) {
 
@@ -2346,10 +2106,6 @@ function loadImage(
 
     let files;
 
-
-    // ==================================
-    // ARQUIVO DIRETO
-    // ==================================
 
     if (
         eventOrFile instanceof File
@@ -2386,10 +2142,6 @@ function loadImage(
         }
 
 
-    // ==================================
-    // INPUT DE ARQUIVO
-    // ==================================
-
     } else {
 
         if (
@@ -2408,10 +2160,6 @@ function loadImage(
             );
     }
 
-
-    // ==================================
-    // UMA IMAGEM
-    // ==================================
 
     if (files.length === 1) {
 
@@ -2445,10 +2193,6 @@ function loadImage(
         return;
     }
 
-
-    // ==================================
-    // VÁRIAS IMAGENS
-    // ==================================
 
     let currentPosition =
         position;
