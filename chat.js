@@ -196,12 +196,24 @@
 
         if (!text) return;
 
-        const sender = Number(data.sender);
+        let sender = Number(
+            data.sender ??
+            data.player ??
+            data.player_number
+        );
+
         const localPlayer = Number(
             typeof playerNumber !== "undefined"
                 ? playerNumber
                 : 0
         );
+
+        // Servidores antigos podem não devolver o remetente.
+        // Nesse caso, se a mensagem vier sem identificação, ela é
+        // mostrada como a mensagem local para não fazer o chat parar.
+        if (sender !== 1 && sender !== 2) {
+            sender = localPlayer;
+        }
 
         if (sender !== 1 && sender !== 2) {
             return;

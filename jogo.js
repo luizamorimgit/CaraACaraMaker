@@ -195,7 +195,7 @@ function receiveMatchConfig(data) {
 
 
     if (
-        [1, 2, 3, 5, 7].includes(value)
+        [1, 3, 5, 7].includes(value)
     ) {
 
         winsToFinish =
@@ -2749,9 +2749,22 @@ function handleGameMessage(data) {
         ) {
 
             updateMatchScore(
-                data.score[1] ?? data.score["1"] ?? 0,
-                data.score[2] ?? data.score["2"] ?? 0
+                data.score[1] ?? data.score["1"] ?? player1Score,
+                data.score[2] ?? data.score["2"] ?? player2Score
             );
+
+        } else if (
+            typeof updateMatchScore === "function" &&
+            typeof playerNumber !== "undefined"
+        ) {
+
+            // Compatibilidade com servidor antigo que envia bet_won
+            // sem o placar.
+            if (Number(playerNumber) === 1) {
+                updateMatchScore(player1Score + 1, player2Score);
+            } else {
+                updateMatchScore(player1Score, player2Score + 1);
+            }
         }
 
 

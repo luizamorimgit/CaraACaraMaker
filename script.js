@@ -358,7 +358,6 @@ function confirmMatchConfig() {
 
 const MATCH_WINS_OPTIONS = [
     1,
-    2,
     3,
     5,
     7

@@ -2,6 +2,24 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 
 app = FastAPI()
 
+def normalize_image_reference(value):
+    """Normaliza referências de imagem para comparar a mesma carta.
+
+    O cliente pode enviar a mesma imagem com pequenas diferenças de
+    prefixo, como ./, / ou barras invertidas. O servidor continua sendo
+    a autoridade do resultado.
+    """
+    if not isinstance(value, str):
+        return ""
+
+    value = value.strip().replace("\\", "/")
+
+    while value.startswith("./"):
+        value = value[2:]
+
+    return value.lstrip("/").lower()
+
+
 rooms = {}
 
 
@@ -1158,8 +1176,12 @@ async def websocket_endpoint(
                 # ==================================
 
                 is_correct = (
-                    bet["card_image"]
-                    == selected_character
+                    normalize_image_reference(
+                        bet["card_image"]
+                    )
+                    == normalize_image_reference(
+                        selected_character
+                    )
                 )
 
 
@@ -1324,7 +1346,8 @@ async def websocket_endpoint(
                                 await opponent_socket.send_json({
                                     "type": "bet_lost",
                                     "bet_image":
-                                        bet["card_image"]
+                                        bet["card_image"],
+                                    "score": current_score
                                 })
 
                             except Exception as error:
