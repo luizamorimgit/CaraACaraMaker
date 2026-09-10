@@ -2657,17 +2657,17 @@ body.dark .match-final-score {
 
 .chat-message.player1 {
     align-self: flex-start;
-    background: rgba(220, 45, 45, 0.14);
-    border: 1px solid rgba(220, 45, 45, 0.45);
-    color: #a51f1f;
+    background: rgba(55, 105, 220, 0.14);
+    border: 1px solid rgba(55, 105, 220, 0.45);
+    color: #234f9f;
     text-align: left;
 }
 
 .chat-message.player2 {
     align-self: flex-end;
-    background: rgba(55, 105, 220, 0.14);
-    border: 1px solid rgba(55, 105, 220, 0.45);
-    color: #234f9f;
+    background: rgba(220, 45, 45, 0.14);
+    border: 1px solid rgba(220, 45, 45, 0.45);
+    color: #a51f1f;
     text-align: right;
 }
 
@@ -2676,13 +2676,13 @@ body.dark .chat-notification {
 }
 
 body.dark .chat-message.player1 {
-    background: rgba(220, 45, 45, 0.2);
-    border-color: rgba(220, 45, 45, 0.5);
-    color: #ff8a8a;
-}
-
-body.dark .chat-message.player2 {
     background: rgba(55, 105, 220, 0.2);
     border-color: rgba(55, 105, 220, 0.5);
     color: #8fb2ff;
+}
+
+body.dark .chat-message.player2 {
+    background: rgba(220, 45, 45, 0.2);
+    border-color: rgba(220, 45, 45, 0.5);
+    color: #ff8a8a;
 }

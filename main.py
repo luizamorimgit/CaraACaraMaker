@@ -552,7 +552,20 @@ async def websocket_endpoint(
             if message_type == "play_again":
 
                 # ==================================
-                # CADA JOGADOR PRECISA CONFIRMAR
+                # SOMENTE O CRIADOR DA SALA (J1)
+                # PODE INICIAR UMA NOVA PARTIDA
+                # ==================================
+
+                if player_number != 1:
+                    await websocket.send_json({
+                        "type": "action_denied",
+                        "action": "play_again",
+                        "message": "Somente o criador da sala pode iniciar outra partida."
+                    })
+                    continue
+
+                # ==================================
+                # O CRIADOR SOLICITA NOVA PARTIDA
                 # ==================================
 
                 room.setdefault(
@@ -626,6 +639,19 @@ async def websocket_endpoint(
             # ======================================
 
             if message_type == "change_match_config":
+
+                # ==================================
+                # SOMENTE O CRIADOR DA SALA (J1)
+                # PODE MUDAR A QUANTIDADE DE VITÓRIAS
+                # ==================================
+
+                if player_number != 1:
+                    await websocket.send_json({
+                        "type": "action_denied",
+                        "action": "change_match_config",
+                        "message": "Somente o criador da sala pode mudar as vitórias."
+                    })
+                    continue
 
                 # ==================================
                 # SOMENTE UMA SOLICITAÇÃO POR VEZ

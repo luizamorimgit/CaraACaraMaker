@@ -1659,11 +1659,22 @@ function handleMatchWon(data) {
                 "VOCÊ VENCEU A PARTIDA!";
         }
 
+        // Somente o criador da sala (J1) controla o que acontece depois.
+        if (Number(playerNumber) === 1) {
 
-        openMatchFinishedPopup(
-            "VOCÊ VENCEU!",
-            "Parabéns! Você venceu a partida."
-        );
+            openMatchFinishedPopup(
+                "VOCÊ VENCEU!",
+                "Parabéns! Você venceu a partida."
+            );
+
+        } else {
+
+            openMatchResultPopup(
+                "VOCÊ VENCEU!",
+                "Parabéns! Você venceu a partida.",
+                true
+            );
+        }
 
     } else {
 
@@ -1673,12 +1684,47 @@ function handleMatchWon(data) {
                 "O ADVERSÁRIO VENCEU A PARTIDA.";
         }
 
+        // O J2 não pode escolher jogar novamente, mudar vitórias ou sair
+        // pelo popup final. Ele apenas aguarda o criador (J1).
+        if (Number(playerNumber) === 1) {
 
-        openMatchFinishedPopup(
-            "VOCÊ PERDEU",
-            "O adversário venceu a partida."
-        );
+            openMatchFinishedPopup(
+                "VOCÊ PERDEU",
+                "O adversário venceu a partida."
+            );
+
+        } else {
+
+            openMatchResultPopup(
+                "VOCÊ PERDEU",
+                "O adversário venceu a partida.",
+                false
+            );
+        }
     }
+}
+
+
+// ==========================================
+// RESULTADO DA PARTIDA PARA O J2
+// ==========================================
+
+function openMatchResultPopup(
+    title,
+    message,
+    won
+) {
+
+    openCustomPopup(
+        title,
+        message +
+        " Placar final: " +
+        player1Score +
+        " × " +
+        player2Score +
+        ". Aguardando o criador da sala decidir o próximo passo...",
+        []
+    );
 }
 
 
@@ -1735,6 +1781,10 @@ function openMatchFinishedPopup(
 
 function requestPlayAgain() {
 
+    if (Number(playerNumber) !== 1) {
+        return;
+    }
+
     sendGameMessage({
         type: "play_again"
     });
@@ -1752,6 +1802,10 @@ function requestPlayAgain() {
 // ==========================================
 
 function requestChangeMatchConfig() {
+
+    if (Number(playerNumber) !== 1) {
+        return;
+    }
 
     sendGameMessage({
         type: "change_match_config"
