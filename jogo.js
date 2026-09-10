@@ -272,6 +272,10 @@ function receiveGameBoards(
     images2
 ) {
 
+    if (window.ccmDebug) {
+        window.ccmDebug("RECEIVE GAME BOARDS", "J1=" + (Array.isArray(images1) ? images1.length : "inválido") + " J2=" + (Array.isArray(images2) ? images2.length : "inválido") + " player=" + playerNumber);
+    }
+
     matchFinished = false;
 
     if (!Array.isArray(images1)) {
@@ -336,6 +340,9 @@ function receiveGameBoards(
 
     shuffleGameCards();
 
+    if (window.ccmDebug) {
+        window.ccmDebug("CARTAS MONTADAS", "total=" + gameCards.length);
+    }
 
     openCharacterChoice();
 }
@@ -376,6 +383,10 @@ function shuffleGameCards() {
 // ==========================================
 
 function openCharacterChoice() {
+
+if (window.ccmDebug) {
+    window.ccmDebug("OPEN CHARACTER CHOICE", "screen=" + !!characterChoiceScreen + " cards=" + gameCards.length);
+}
 
 if (!characterChoiceScreen) {
     return;
@@ -640,6 +651,10 @@ function openCharacterConfirmation() {
 
 function confirmCharacter(image) {
 
+    if (window.ccmDebug) {
+        window.ccmDebug("PERSONAGEM CONFIRMADO", "imagem=" + (image ? "OK" : "VAZIA") + " player=" + playerNumber);
+    }
+
     characterChoiceConfirmed =
         true;
 
@@ -686,6 +701,10 @@ function confirmCharacter(image) {
 
 function opponentCharacterConfirmed() {
 
+    if (window.ccmDebug) {
+        window.ccmDebug("OPONENTE CONFIRMOU", "eu=" + characterChoiceConfirmed + " outro=" + opponentChoiceConfirmed);
+    }
+
     if (replacementActive) {
         return;
     }
@@ -709,6 +728,10 @@ function opponentCharacterConfirmed() {
 // ==========================================
 
 function startGame() {
+
+    if (window.ccmDebug) {
+        window.ccmDebug("START GAME", "finished=" + matchFinished + " started=" + gameStarted + " cards=" + gameCards.length);
+    }
 
     if (matchFinished) {
         return;
@@ -2422,6 +2445,10 @@ function openCustomPopup(
 
 function handleGameMessage(data) {
 
+    if (window.ccmDebug) {
+        window.ccmDebug("handleGameMessage", data && data.type ? data.type : "SEM TIPO");
+    }
+
     if (!data || !data.type) {
         return;
     }
@@ -2505,6 +2532,10 @@ function handleGameMessage(data) {
     // ======================================
 
     if (data.type === "game_boards") {
+
+        if (window.ccmDebug) {
+            window.ccmDebug("GAME_BOARDS RECEBIDO", "entrando em receiveGameBoards");
+        }
 
         receiveGameBoards(
             data.player1,

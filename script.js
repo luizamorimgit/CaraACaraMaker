@@ -11,6 +11,32 @@ let connectionTimeout = null;
 let roomCode = "";
 let playerNumber = null;
 
+// ==========================================
+// PAINEL DE DIAGNÓSTICO TEMPORÁRIO
+// ==========================================
+function ccmDebug(message, detail = "") {
+    const text = "[CCM] " + message + (detail !== "" ? " | " + detail : "");
+    console.log(text);
+    let panel = document.getElementById("ccmDebugPanel");
+    if (!panel) {
+        panel = document.createElement("div");
+        panel.id = "ccmDebugPanel";
+        panel.style.cssText = "position:fixed;left:8px;right:8px;bottom:8px;z-index:999999;max-height:45vh;overflow:auto;padding:10px;background:#111;color:#fff;font:12px monospace;border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,.35);";
+        const header = document.createElement("div");
+        header.style.cssText = "display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px;position:sticky;top:0;background:#111;";
+        const title = document.createElement("strong"); title.textContent = "DIAGNÓSTICO CCM";
+        const clearButton = document.createElement("button"); clearButton.textContent = "LIMPAR";
+        clearButton.style.cssText = "border:0;border-radius:6px;padding:4px 8px;font:inherit;cursor:pointer;";
+        clearButton.addEventListener("click", function () { panel.querySelectorAll(".ccm-debug-line").forEach(function (line) { line.remove(); }); });
+        header.appendChild(title); header.appendChild(clearButton); panel.appendChild(header); document.body.appendChild(panel);
+    }
+    const line = document.createElement("div"); line.className = "ccm-debug-line"; line.textContent = text; line.style.marginBottom = "3px";
+    panel.appendChild(line); panel.scrollTop = panel.scrollHeight;
+}
+window.ccmDebug = ccmDebug;
+window.addEventListener("error", function (event) { ccmDebug("ERRO JS", event.message + " @ linha " + event.lineno); });
+window.addEventListener("unhandledrejection", function (event) { ccmDebug("PROMISE", String(event.reason)); });
+
 let socketGeneration = 0;
 
 let retryTimer = null;
@@ -92,6 +118,10 @@ const matchScore =
 // ==========================================
 
 function showScreen(screen) {
+
+    if (window.ccmDebug) {
+        window.ccmDebug("TROCANDO TELA", screen ? (screen.id || "sem-id") : "TELA NULA");
+    }
 
     if (!screen) {
         return;
@@ -973,6 +1003,10 @@ function connectToRoom(
     action
 ) {
 
+    if (window.ccmDebug) {
+        window.ccmDebug("CONECTANDO", "sala=" + code + " ação=" + action);
+    }
+
     if (connectionTimeout) {
 
         clearTimeout(
@@ -1075,6 +1109,9 @@ function connectToRoom(
 
     newSocket.onopen =
         function () {
+            if (window.ccmDebug) {
+                window.ccmDebug("WEBSOCKET ABERTO", "sala=" + code + " ação=" + action);
+            }
 
             if (
                 socket !== newSocket ||
@@ -1246,6 +1283,10 @@ function connectToRoom(
                         event.data
                     );
 
+                if (window.ccmDebug) {
+                    window.ccmDebug("SERVIDOR → CLIENTE", data.type || "SEM TIPO");
+                }
+
             } catch (error) {
 
                 console.error(
@@ -1265,6 +1306,9 @@ function connectToRoom(
 
     newSocket.onerror =
         function (error) {
+            if (window.ccmDebug) {
+                window.ccmDebug("WEBSOCKET ERRO", "readyState=" + newSocket.readyState);
+            }
 
             if (
                 socket !== newSocket ||
@@ -1287,6 +1331,9 @@ function connectToRoom(
 
     newSocket.onclose =
         function (event) {
+            if (window.ccmDebug) {
+                window.ccmDebug("WEBSOCKET FECHADO", "código=" + event.code + " motivo=" + (event.reason || "-"));
+            }
 
             console.log(
                 "WebSocket fechado."
@@ -1351,6 +1398,10 @@ function connectToRoom(
 // ==========================================
 
 function handleServerMessage(data) {
+
+    if (window.ccmDebug) {
+        window.ccmDebug("handleServerMessage", data && data.type ? data.type : "SEM TIPO");
+    }
 
     if (!data || !data.type) {
         return;
@@ -1566,6 +1617,9 @@ function handleServerMessage(data) {
 
 
         if (players.length === 2) {
+            if (window.ccmDebug) {
+                window.ccmDebug("2 JOGADORES", "abrindo setup");
+            }
 
             waitingMessage.textContent =
                 "OS DOIS JOGADORES ESTÃO NA SALA!";
@@ -3516,6 +3570,10 @@ function closePopup() {
 
 function boardConfirmed() {
 
+    if (window.ccmDebug) {
+        window.ccmDebug("BOARD_READY", "imagens=" + boardImages.filter(function (image) { return image !== null; }).length + " socket=" + (socket ? socket.readyState : "null"));
+    }
+
     waitingMessage.textContent =
         "SEU TABULEIRO FOI CONFIRMADO.";
 
@@ -3545,6 +3603,10 @@ function boardConfirmed() {
                 images: boardImages
             })
         );
+
+        if (window.ccmDebug) {
+            window.ccmDebug("BOARD_READY ENVIADO", "aguardando servidor");
+        }
 
     } else {
 
