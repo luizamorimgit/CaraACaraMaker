@@ -17,6 +17,27 @@ let retryTimer = null;
 
 
 // ==========================================
+// CONFIGURAÇÃO DA PARTIDA - v3.0
+// ==========================================
+
+let winsToFinish = 1;
+
+let matchConfigConfirmed = false;
+
+let player1Score = 0;
+let player2Score = 0;
+
+let creatingAnimationTimer = null;
+let creatingAnimationIndex = 0;
+
+// Modo da tela de configuração:
+// "create" = criar uma sala nova
+// "change" = alterar a configuração da sala atual
+let matchConfigMode = "create";
+let matchConfigController = null;
+
+
+// ==========================================
 // ELEMENTOS
 // ==========================================
 
@@ -25,6 +46,9 @@ const screens =
 
 const lobby =
     document.getElementById("lobby");
+
+const matchConfig =
+    document.getElementById("matchConfig");
 
 const joinRoomScreen =
     document.getElementById("joinRoom");
@@ -58,6 +82,9 @@ const gamePopup =
 
 const popupBoard =
     document.getElementById("popupBoard");
+
+const matchScore =
+    document.getElementById("matchScore");
 
 
 // ==========================================
@@ -148,14 +175,367 @@ window.addEventListener(
 
 
 // ==========================================
+// ANIMAÇÃO "CRIANDO..."
+// ==========================================
+
+function startCreatingAnimation(button) {
+
+    stopCreatingAnimation();
+
+    if (!button) {
+        return;
+    }
+
+    creatingAnimationIndex = 0;
+
+    const states = [
+        "CRIANDO",
+        "CRIANDO.",
+        "CRIANDO..",
+        "CRIANDO..."
+    ];
+
+    button.textContent =
+        states[0];
+
+    creatingAnimationTimer =
+        setInterval(
+            function () {
+
+                creatingAnimationIndex =
+                    (creatingAnimationIndex + 1) %
+                    states.length;
+
+                button.textContent =
+                    states[
+                        creatingAnimationIndex
+                    ];
+
+            },
+            400
+        );
+}
+
+
+// ==========================================
+// PARAR ANIMAÇÃO "CRIANDO..."
+// ==========================================
+
+function stopCreatingAnimation() {
+
+    if (creatingAnimationTimer) {
+
+        clearInterval(
+            creatingAnimationTimer
+        );
+
+        creatingAnimationTimer =
+            null;
+    }
+
+    creatingAnimationIndex =
+        0;
+}
+
+
+// ==========================================
+// CONFIGURAÇÃO DA PARTIDA
+// ==========================================
+
+function openMatchConfig(
+    mode = "create",
+    controller = null
+) {
+
+    matchConfigMode =
+        mode === "change"
+            ? "change"
+            : "create";
+
+    matchConfigController =
+        matchConfigMode === "change"
+            ? Number(controller)
+            : null;
+
+    if (matchConfigMode === "create") {
+        winsToFinish = 1;
+    }
+
+    matchConfigConfirmed = false;
+
+    document
+        .querySelectorAll(".wins-option")
+        .forEach(
+            function (button) {
+
+                button.classList.remove(
+                    "active",
+                    "selected"
+                );
+
+                if (
+                    Number(button.dataset.wins) ===
+                    Number(winsToFinish)
+                ) {
+
+                    button.classList.add(
+                        "active",
+                        "selected"
+                    );
+                }
+            }
+        );
+
+    const createButton =
+        document.getElementById(
+            "createRoomButton"
+        );
+
+    if (createButton) {
+
+        if (matchConfigMode === "change") {
+
+            createButton.textContent =
+                "CONFIRMAR";
+
+            const canConfirm =
+                !matchConfigController ||
+                Number(playerNumber) ===
+                    matchConfigController;
+
+            createButton.disabled =
+                !canConfirm;
+
+        } else {
+
+            createButton.textContent =
+                "CRIAR SALA";
+
+            createButton.disabled =
+                false;
+        }
+    }
+
+    showScreen(
+        matchConfig
+    );
+}
+
+
+// ==========================================
+// CONFIRMAR CONFIGURAÇÃO
+// ==========================================
+
+function confirmMatchConfig() {
+
+    if (matchConfigMode === "change") {
+
+        if (
+            matchConfigController &&
+            Number(playerNumber) !==
+                matchConfigController
+        ) {
+            return;
+        }
+
+        matchConfigConfirmed = true;
+
+        const button =
+            document.getElementById(
+                "createRoomButton"
+            );
+
+        if (button) {
+            button.disabled = true;
+            button.textContent = "SALVANDO...";
+        }
+
+        if (typeof showWaitingOverlay === "function") {
+            showWaitingOverlay(
+                "CONFIGURAÇÃO",
+                "Aplicando a nova configuração..."
+            );
+        }
+
+        if (typeof sendGameMessage === "function") {
+            sendGameMessage({
+                type: "set_match_config",
+                wins_to_finish: winsToFinish
+            });
+        }
+
+        return;
+    }
+
+    matchConfigConfirmed = true;
+
+    createRoom();
+}
+
+
+// ==========================================
+// ESCOLHER QUANTIDADE DE VITÓRIAS
+// ==========================================
+
+document.addEventListener(
+    "click",
+    function (event) {
+
+        const button =
+            event.target.closest(
+                ".wins-option"
+            );
+
+        if (!button) {
+            return;
+        }
+
+        const value =
+            Number(
+                button.dataset.wins
+            );
+
+        if (
+            ![1, 3, 5, 10].includes(
+                value
+            )
+        ) {
+            return;
+        }
+
+        winsToFinish =
+            value;
+
+        document
+            .querySelectorAll(".wins-option")
+            .forEach(
+                function (item) {
+
+                    item.classList.remove(
+                        "active",
+                        "selected"
+                    );
+                }
+            );
+
+        button.classList.add(
+            "active",
+            "selected"
+        );
+    }
+);
+
+
+// ==========================================
+// VOLTAR DA CONFIGURAÇÃO PARA O LOBBY
+// ==========================================
+
+function backToLobby() {
+
+    stopCreatingAnimation();
+
+    matchConfigConfirmed = false;
+
+    matchConfigMode = "create";
+    matchConfigController = null;
+
+    winsToFinish = 1;
+
+    resetMatchScore();
+
+    resetRoomButtons();
+
+    showScreen(
+        lobby
+    );
+}
+
+
+// ==========================================
+// ATUALIZAR PLACAR
+// ==========================================
+
+function updateMatchScore(
+    score1,
+    score2
+) {
+
+    const parsedScore1 =
+        Number(score1);
+
+    const parsedScore2 =
+        Number(score2);
+
+    if (
+        Number.isFinite(parsedScore1)
+    ) {
+
+        player1Score =
+            parsedScore1;
+    }
+
+    if (
+        Number.isFinite(parsedScore2)
+    ) {
+
+        player2Score =
+            parsedScore2;
+    }
+
+    if (matchScore) {
+
+        matchScore.textContent =
+            `J1 — ${player1Score} × ${player2Score} — J2`;
+    }
+}
+
+
+// ==========================================
+// RESETAR PLACAR
+// ==========================================
+
+function resetMatchScore() {
+
+    player1Score =
+        0;
+
+    player2Score =
+        0;
+
+    updateMatchScore(
+        0,
+        0
+    );
+}
+
+
+// ==========================================
 // RESETAR BOTÕES
 // ==========================================
 
 function resetRoomButtons() {
 
+    stopCreatingAnimation();
+
+
+    const createLobbyButton =
+        document.querySelector(
+            '#lobby button[onclick="openMatchConfig()"]'
+        );
+
+    if (createLobbyButton) {
+
+        createLobbyButton.textContent =
+            "CRIAR SALA";
+
+        createLobbyButton.disabled =
+            false;
+    }
+
+
     const createButton =
         document.querySelector(
-            '#lobby button[onclick="createRoom()"]'
+            '#matchConfig button[onclick="confirmMatchConfig()"]'
         );
 
     if (createButton) {
@@ -282,7 +662,8 @@ function backToRoomChoice() {
                 connectionTimeout
             );
 
-            connectionTimeout = null;
+            connectionTimeout =
+                null;
         }
 
         if (retryTimer) {
@@ -291,15 +672,31 @@ function backToRoomChoice() {
                 retryTimer
             );
 
-            retryTimer = null;
+            retryTimer =
+                null;
         }
 
-        roomCode = "";
-        playerNumber = null;
+        stopCreatingAnimation();
+
+        roomCode =
+            "";
+
+        playerNumber =
+            null;
+
+        matchConfigConfirmed =
+            false;
+
+        winsToFinish =
+            1;
+
+        resetMatchScore();
 
         resetRoomButtons();
 
-        showScreen(lobby);
+        showScreen(
+            lobby
+        );
     }
 }
 
@@ -313,9 +710,14 @@ function generateRoomCode() {
     const characters =
         "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
-    let code = "";
+    let code =
+        "";
 
-    for (let i = 0; i < 4; i++) {
+    for (
+        let i = 0;
+        i < 4;
+        i++
+    ) {
 
         code +=
             characters.charAt(
@@ -336,9 +738,17 @@ function generateRoomCode() {
 
 function createRoom() {
 
+    if (!matchConfigConfirmed) {
+
+        openMatchConfig();
+
+        return;
+    }
+
+
     const button =
         document.querySelector(
-            '#lobby button[onclick="createRoom()"]'
+            '#matchConfig button[onclick="confirmMatchConfig()"]'
         );
 
 
@@ -348,7 +758,19 @@ function createRoom() {
             connectionTimeout
         );
 
-        connectionTimeout = null;
+        connectionTimeout =
+            null;
+    }
+
+
+    if (retryTimer) {
+
+        clearTimeout(
+            retryTimer
+        );
+
+        retryTimer =
+            null;
     }
 
 
@@ -358,18 +780,23 @@ function createRoom() {
             socket.close();
         } catch (error) {}
 
-        socket = null;
+        socket =
+            null;
     }
 
 
     if (button) {
 
-        button.textContent =
-            "CRIANDO...";
-
         button.disabled =
             true;
+
+        startCreatingAnimation(
+            button
+        );
     }
+
+
+    resetMatchScore();
 
 
     const code =
@@ -425,8 +852,14 @@ if (joinRoomCode) {
             this.value =
                 this.value
                     .toUpperCase()
-                    .replace(/[^A-Z0-9]/g, "")
-                    .slice(0, 4);
+                    .replace(
+                        /[^A-Z0-9]/g,
+                        ""
+                    )
+                    .slice(
+                        0,
+                        4
+                    );
         }
     );
 }
@@ -499,7 +932,8 @@ function connectToRoom(
             connectionTimeout
         );
 
-        connectionTimeout = null;
+        connectionTimeout =
+            null;
     }
 
 
@@ -515,7 +949,8 @@ function connectToRoom(
             socket.close();
         } catch (error) {}
 
-        socket = null;
+        socket =
+            null;
     }
 
 
@@ -554,17 +989,22 @@ function connectToRoom(
                         "Servidor demorou. Tentando novamente..."
                     );
 
+
                     try {
                         newSocket.close();
                     } catch (error) {}
 
-                    socket = null;
+
+                    socket =
+                        null;
+
 
                     retryTimer =
                         setTimeout(
                             function () {
 
-                                retryTimer = null;
+                                retryTimer =
+                                    null;
 
                                 connectToRoom(
                                     code,
@@ -619,6 +1059,114 @@ function connectToRoom(
                 connectionTimeout =
                     null;
             }
+
+
+            // ==================================
+            // CONFIGURAÇÃO DA PARTIDA
+            // ==================================
+
+            if (
+                action === "create"
+            ) {
+
+                const validWins =
+                    [1, 3, 5, 10];
+
+
+                if (
+                    !validWins.includes(
+                        Number(winsToFinish)
+                    )
+                ) {
+
+                    winsToFinish =
+                        1;
+                }
+
+
+                try {
+
+                    newSocket.send(
+                        JSON.stringify({
+                            type: "set_match_config",
+                            wins_to_finish:
+                                winsToFinish
+                        })
+                    );
+
+                    console.log(
+                        "Configuração enviada:",
+                        winsToFinish,
+                        "vitória(s)"
+                    );
+
+                } catch (error) {
+
+                    console.error(
+                        "Erro ao enviar configuração da partida:",
+                        error
+                    );
+                }
+            }
+
+
+            // ==================================
+            // TEMPO MÁXIMO DE SEGURANÇA
+            // ==================================
+            //
+            // Se o WebSocket conectar, mas o
+            // servidor não responder com uma
+            // mensagem válida, não deixamos
+            // "CRIANDO..." preso para sempre.
+            // ==================================
+
+            connectionTimeout =
+                setTimeout(
+                    function () {
+
+                        if (
+                            socket !== newSocket ||
+                            socketGeneration !== currentGeneration
+                        ) {
+                            return;
+                        }
+
+
+                        console.log(
+                            "Servidor conectado, mas não respondeu a tempo."
+                        );
+
+
+                        stopCreatingAnimation();
+
+
+                        if (newSocket.readyState === WebSocket.OPEN) {
+
+                            try {
+
+                                newSocket.close();
+
+                            } catch (error) {}
+                        }
+
+
+                        socket =
+                            null;
+
+
+                        resetRoomButtons();
+
+
+                        openPopup(
+                            "CONEXÃO DEMOROU",
+                            "O SERVIDOR DEMOROU DEMAIS PARA RESPONDER. TENTE NOVAMENTE.",
+                            null,
+                            "OK"
+                        );
+
+                    },
+                    10000
+                );
         };
 
 
@@ -681,6 +1229,10 @@ function connectToRoom(
                 "ERRO NO WEBSOCKET:",
                 error
             );
+
+            // O onclose fará o tratamento final.
+            // Não paramos "CRIANDO..." aqui, pois ainda pode haver
+            // uma tentativa/reconexão em andamento.
         };
 
 
@@ -723,6 +1275,24 @@ function connectToRoom(
                 connectionTimeout =
                     null;
             }
+
+
+            const waitingForRoomConnection =
+                matchConfig.classList.contains("active") ||
+                joinRoomScreen.classList.contains("active");
+
+
+            if (waitingForRoomConnection) {
+
+                resetRoomButtons();
+
+                openPopup(
+                    "CONEXÃO PERDIDA",
+                    "NÃO FOI POSSÍVEL CONECTAR AO SERVIDOR. TENTE NOVAMENTE.",
+                    null,
+                    "OK"
+                );
+            }
         };
 }
 
@@ -738,7 +1308,151 @@ function handleServerMessage(data) {
     }
 
 
+    // ======================================
+    // CONFIGURAÇÃO DA PARTIDA
+    // ======================================
+
+    if (
+        data.type === "match_config"
+    ) {
+
+        const configuredWins =
+            Number(
+                data.wins_to_finish
+            );
+
+
+        if (
+            [1, 3, 5, 10].includes(
+                configuredWins
+            )
+        ) {
+
+            winsToFinish =
+                configuredWins;
+        }
+
+
+        if (data.score) {
+
+            updateMatchScore(
+                data.score[1] ??
+                    data.score["1"] ??
+                    0,
+
+                data.score[2] ??
+                    data.score["2"] ??
+                    0
+            );
+        }
+
+
+        console.log(
+            "Partida configurada para:",
+            winsToFinish,
+            "vitória(s)"
+        );
+
+
+        if (matchConfigMode === "change") {
+
+            matchConfigMode = "create";
+            matchConfigController = null;
+            matchConfigConfirmed = false;
+
+            if (typeof handleGameMessage === "function") {
+                handleGameMessage(data);
+            }
+
+            return;
+        }
+
+
+        return;
+    }
+
+
+    // ======================================
+    // ATUALIZAÇÃO DO PLACAR
+    // ======================================
+
+    if (
+        data.type === "score_update"
+    ) {
+
+        if (data.score) {
+
+            updateMatchScore(
+                data.score[1] ??
+                    data.score["1"] ??
+                    0,
+
+                data.score[2] ??
+                    data.score["2"] ??
+                    0
+            );
+
+        } else {
+
+            updateMatchScore(
+                data.player1_score ??
+                    player1Score,
+
+                data.player2_score ??
+                    player2Score
+            );
+        }
+
+        // Não usamos return aqui.
+        // jogo.js também precisa receber
+        // essa mensagem.
+    }
+
+
+    // ======================================
+    // PARTIDA VENCIDA
+    // ======================================
+
+    if (
+        data.type === "match_won"
+    ) {
+
+        updateMatchScore(
+            data.score?.[1] ??
+                data.score?.["1"] ??
+                data.player1_score ??
+                player1Score,
+
+            data.score?.[2] ??
+                data.score?.["2"] ??
+                data.player2_score ??
+                player2Score
+        );
+
+        // Não mostramos popup aqui.
+        // jogo.js será responsável pela tela
+        // final de vitória/derrota.
+    }
+
+
+    // ======================================
+    // JOGADOR ENTROU
+    // ======================================
+
     if (data.type === "joined") {
+
+        // O servidor respondeu corretamente.
+        // Podemos cancelar o limite de segurança.
+        if (connectionTimeout) {
+
+            clearTimeout(
+                connectionTimeout
+            );
+
+            connectionTimeout =
+                null;
+        }
+
 
         playerNumber =
             data.player;
@@ -764,9 +1478,18 @@ function handleServerMessage(data) {
         );
 
 
+        stopCreatingAnimation();
+
+        matchConfigMode = "create";
+        matchConfigController = null;
+
         return;
     }
 
+
+    // ======================================
+    // JOGADORES
+    // ======================================
 
     if (data.type === "players") {
 
@@ -797,7 +1520,9 @@ function handleServerMessage(data) {
 
 
             if (
-                waitingRoom.classList.contains("active")
+                waitingRoom.classList.contains(
+                    "active"
+                )
             ) {
 
                 openSetup();
@@ -808,6 +1533,10 @@ function handleServerMessage(data) {
         return;
     }
 
+
+    // ======================================
+    // JOGADOR SAIU
+    // ======================================
 
     if (data.type === "player_left") {
 
@@ -831,25 +1560,37 @@ function handleServerMessage(data) {
 
 
         if (
-            setup.classList.contains("active") ||
-            (
-                typeof characterChoiceScreen !== "undefined" &&
-                characterChoiceScreen &&
-                characterChoiceScreen.classList.contains("active")
+            setup.classList.contains(
+                "active"
             ) ||
             (
-                typeof gameScreen !== "undefined" &&
+                typeof characterChoiceScreen !==
+                "undefined" &&
+                characterChoiceScreen &&
+                characterChoiceScreen.classList.contains(
+                    "active"
+                )
+            ) ||
+            (
+                typeof gameScreen !==
+                "undefined" &&
                 gameScreen &&
-                gameScreen.classList.contains("active")
+                gameScreen.classList.contains(
+                    "active"
+                )
             )
         ) {
 
             if (
-                typeof resetAllGameVariables === "function"
+                typeof resetAllGameVariables ===
+                "function"
             ) {
 
                 resetAllGameVariables();
             }
+
+
+            resetMatchScore();
 
 
             showScreen(
@@ -872,7 +1613,25 @@ function handleServerMessage(data) {
     }
 
 
+    // ======================================
+    // SALA NÃO EXISTE
+    // ======================================
+
     if (data.type === "room_not_found") {
+
+        stopCreatingAnimation();
+
+
+        if (connectionTimeout) {
+
+            clearTimeout(
+                connectionTimeout
+            );
+
+            connectionTimeout =
+                null;
+        }
+
 
         if (socket) {
 
@@ -880,8 +1639,10 @@ function handleServerMessage(data) {
                 socket.close();
             } catch (error) {}
 
-            socket = null;
+            socket =
+                null;
         }
+
 
         resetRoomButtons();
 
@@ -913,7 +1674,22 @@ function handleServerMessage(data) {
     }
 
 
+    // ======================================
+    // CÓDIGO DA SALA JÁ EXISTE
+    // ======================================
+
     if (data.type === "room_exists") {
+
+        if (connectionTimeout) {
+
+            clearTimeout(
+                connectionTimeout
+            );
+
+            connectionTimeout =
+                null;
+        }
+
 
         if (socket) {
 
@@ -921,7 +1697,8 @@ function handleServerMessage(data) {
                 socket.close();
             } catch (error) {}
 
-            socket = null;
+            socket =
+                null;
         }
 
 
@@ -939,7 +1716,25 @@ function handleServerMessage(data) {
     }
 
 
+    // ======================================
+    // SALA CHEIA
+    // ======================================
+
     if (data.type === "room_full") {
+
+        stopCreatingAnimation();
+
+
+        if (connectionTimeout) {
+
+            clearTimeout(
+                connectionTimeout
+            );
+
+            connectionTimeout =
+                null;
+        }
+
 
         if (socket) {
 
@@ -947,7 +1742,8 @@ function handleServerMessage(data) {
                 socket.close();
             } catch (error) {}
 
-            socket = null;
+            socket =
+                null;
         }
 
 
@@ -974,7 +1770,25 @@ function handleServerMessage(data) {
     }
 
 
+    // ======================================
+    // AÇÃO INVÁLIDA
+    // ======================================
+
     if (data.type === "invalid_action") {
+
+        stopCreatingAnimation();
+
+
+        if (connectionTimeout) {
+
+            clearTimeout(
+                connectionTimeout
+            );
+
+            connectionTimeout =
+                null;
+        }
+
 
         if (socket) {
 
@@ -982,7 +1796,8 @@ function handleServerMessage(data) {
                 socket.close();
             } catch (error) {}
 
-            socket = null;
+            socket =
+                null;
         }
 
 
@@ -1005,6 +1820,27 @@ function handleServerMessage(data) {
         return;
     }
 
+
+    // ======================================
+    // CHAT
+    // ======================================
+
+    if (data.type === "chat_message") {
+
+        if (
+            typeof window.handleChatMessage ===
+            "function"
+        ) {
+            window.handleChatMessage(data);
+        }
+
+        return;
+    }
+
+
+    // ======================================
+    // MENSAGENS DO JOGO
+    // ======================================
 
     if (
         typeof handleGameMessage ===
@@ -1135,6 +1971,20 @@ function leaveRoom() {
     }
 
 
+    if (retryTimer) {
+
+        clearTimeout(
+            retryTimer
+        );
+
+        retryTimer =
+            null;
+    }
+
+
+    stopCreatingAnimation();
+
+
     cleanupDragState();
 
 
@@ -1191,6 +2041,18 @@ function leaveRoom() {
     playerNumber =
         null;
 
+    matchConfigConfirmed =
+        false;
+
+    matchConfigMode = "create";
+    matchConfigController = null;
+
+    winsToFinish =
+        1;
+
+
+    resetMatchScore();
+
 
     document.body.classList.remove(
         "player-1-theme",
@@ -1239,7 +2101,7 @@ function leaveRoom() {
 
 
 // ==========================================
-// ABRIR CONFIGURAÇÃO
+// ABRIR CONFIGURAÇÃO DO TABULEIRO
 // ==========================================
 
 function openSetup() {
@@ -1550,10 +2412,16 @@ function createImageSlots() {
         "";
 
 
-    for (let i = 0; i < 6; i++) {
+    for (
+        let i = 0;
+        i < 6;
+        i++
+    ) {
 
         const slot =
-            document.createElement("div");
+            document.createElement(
+                "div"
+            );
 
 
         slot.className =
@@ -1569,7 +2437,9 @@ function createImageSlots() {
 
 
         const input =
-            document.createElement("input");
+            document.createElement(
+                "input"
+            );
 
 
         input.type =
@@ -1592,7 +2462,9 @@ function createImageSlots() {
         if (boardImages[i]) {
 
             const img =
-                document.createElement("img");
+                document.createElement(
+                    "img"
+                );
 
 
             img.src =
@@ -1613,7 +2485,9 @@ function createImageSlots() {
 
 
             const deleteButton =
-                document.createElement("button");
+                document.createElement(
+                    "button"
+                );
 
 
             deleteButton.type =
@@ -1671,7 +2545,9 @@ function createImageSlots() {
         } else {
 
             const plus =
-                document.createElement("span");
+                document.createElement(
+                    "span"
+                );
 
 
             plus.textContent =
@@ -1904,7 +2780,9 @@ function createImageSlots() {
 
                 if (
                     target &&
-                    imageGrid.contains(target)
+                    imageGrid.contains(
+                        target
+                    )
                 ) {
 
                     const targetPosition =
@@ -1967,8 +2845,11 @@ function createImageSlots() {
                     } catch (error) {}
 
 
-                    activeDragSlot = null;
-                    activeDragPointerId = null;
+                    activeDragSlot =
+                        null;
+
+                    activeDragPointerId =
+                        null;
 
                     return;
                 }
@@ -2311,15 +3192,21 @@ function openPopup(
 
 
     const popupTitle =
-        gamePopup.querySelector("h2");
+        gamePopup.querySelector(
+            "h2"
+        );
 
 
     const popupMessage =
-        gamePopup.querySelector("p");
+        gamePopup.querySelector(
+            "p"
+        );
 
 
     const popupActions =
-        gamePopup.querySelector(".popup-actions");
+        gamePopup.querySelector(
+            ".popup-actions"
+        );
 
 
     popupTitle.textContent =
@@ -2331,7 +3218,9 @@ function openPopup(
 
 
     const popupContent =
-        gamePopup.querySelector(".game-popup");
+        gamePopup.querySelector(
+            ".game-popup"
+        );
 
 
     if (popupContent) {
@@ -2779,7 +3668,9 @@ function handleSaveBoardCode() {
 
         localStorage.setItem(
             "saved_board_" + code,
-            JSON.stringify(boardImages)
+            JSON.stringify(
+                boardImages
+            )
         );
 
     } catch (e) {

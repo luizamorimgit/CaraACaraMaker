@@ -19,6 +19,28 @@ def get_connected_players(room):
 
 
 # ==========================================
+# ENVIAR PARA TODOS
+# ==========================================
+
+async def broadcast(room, message):
+
+    for player in room["players"].values():
+
+        if player is not None:
+
+            try:
+
+                await player.send_json(message)
+
+            except Exception as error:
+
+                print(
+                    "ERRO AO ENVIAR MENSAGEM:",
+                    repr(error)
+                )
+
+
+# ==========================================
 # REMOVER JOGADOR
 # ==========================================
 
@@ -59,7 +81,7 @@ async def remove_player(
 
 
     # ======================================
-    # APAGAR TABULEIRO
+    # APAGAR TABULEIRO DO JOGADOR
     # ======================================
 
     room["boards"].pop(
@@ -76,13 +98,31 @@ async def remove_player(
         player_number
     )
 
+
     # ======================================
-    # APAGAR PERSONAGEM
+    # APAGAR PERSONAGENS
     # ======================================
 
     room["characters"] = {}
 
+
     room["new_round"] = False
+
+
+    room["config_controller"] = None
+
+    room["play_again_ready"] = {
+        1: False,
+        2: False
+    }
+
+
+    # ======================================
+    # LIMPAR ESTADO DA RODADA
+    # ======================================
+
+    room["bet"] = None
+
 
     # ======================================
     # JOGADORES RESTANTES
@@ -129,15 +169,13 @@ async def remove_player(
 
     if len(connected_players) == 0:
 
-        # Só remove a sala se esta ainda for
-        # exatamente a sala registrada no servidor.
-
         if rooms.get(room_code) is room:
 
             rooms.pop(
                 room_code,
                 None
             )
+
 
 # ==========================================
 # WEBSOCKET
@@ -173,20 +211,76 @@ async def websocket_endpoint(
 
 
         rooms[room_code] = {
+
+            # ==================================
+            # JOGADORES
+            # ==================================
+
             "players": {
                 1: None,
                 2: None
             },
 
+            # ==================================
+            # TABULEIROS
+            # ==================================
+
             "boards": {},
+
+            # ==================================
+            # PRONTOS
+            # ==================================
 
             "ready": set(),
 
+            # ==================================
+            # PERSONAGENS
+            # ==================================
+
             "characters": {},
+
+            # ==================================
+            # APOSTA
+            # ==================================
 
             "bet": None,
 
-            "new_round": False
+            # ==================================
+            # NOVA RODADA
+            # ==================================
+
+            "new_round": False,
+
+            # ==================================
+            # CONFIGURAÇÃO DA PARTIDA
+            # ==================================
+
+            "wins_to_finish": 1,
+
+            # ==================================
+            # CONTROLADOR DA ALTERAÇÃO DE CONFIGURAÇÃO
+            # ==================================
+
+            "config_controller": None,
+
+            # ==================================
+            # JOGAR NOVAMENTE
+            # ==================================
+
+            "play_again_ready": {
+                1: False,
+                2: False
+            },
+
+            # ==================================
+            # PLACAR
+            # ==================================
+
+            "score": {
+                1: 0,
+                2: 0
+            }
+
         }
 
 
@@ -268,6 +362,33 @@ async def websocket_endpoint(
 
 
     # ==========================================
+    # ENVIAR CONFIGURAÇÃO ATUAL
+    # SOMENTE PARA QUEM ESTÁ ENTRANDO
+    # ==========================================
+
+    if action == "join":
+
+        try:
+
+            await websocket.send_json({
+                "type": "match_config",
+                "wins_to_finish":
+                    room["wins_to_finish"],
+                "score": {
+                    1: room["score"][1],
+                    2: room["score"][2]
+                }
+            })
+
+        except Exception as error:
+
+            print(
+                "ERRO AO ENVIAR CONFIGURAÇÃO:",
+                repr(error)
+            )
+
+
+    # ==========================================
     # AVISAR QUEM ESTÁ NA SALA
     # ==========================================
 
@@ -304,6 +425,219 @@ async def websocket_endpoint(
             message = await websocket.receive_json()
 
             message_type = message.get("type")
+
+
+            # ======================================
+            # CONFIGURAR PARTIDA
+            # ======================================
+
+            if message_type == "set_match_config":
+
+                wins_to_finish = message.get(
+                    "wins_to_finish"
+                )
+
+
+                # ==================================
+                # VALIDAR CONFIGURAÇÃO
+                # ==================================
+
+                if wins_to_finish not in (
+                    1,
+                    3,
+                    5,
+                    10
+                ):
+
+                    continue
+
+
+                # ==================================
+                # CONFIGURAÇÃO INICIAL: SOMENTE J1
+                # ALTERAÇÃO: SOMENTE O CONTROLADOR
+                # ==================================
+
+                config_controller = room.get(
+                    "config_controller"
+                )
+
+                if config_controller is None:
+
+                    if player_number != 1:
+                        continue
+
+                elif player_number != config_controller:
+
+                    continue
+
+
+                room["wins_to_finish"] = wins_to_finish
+
+                room["config_controller"] = None
+
+
+                # ==================================
+                # PREPARAR NOVA PARTIDA
+                # ==================================
+
+                room["characters"] = {}
+                room["bet"] = None
+                room["new_round"] = False
+                room["play_again_ready"] = {
+                    1: False,
+                    2: False
+                }
+
+
+                # ==================================
+                # RESETAR PLACAR
+                # ==================================
+
+                room["score"] = {
+                    1: 0,
+                    2: 0
+                }
+
+
+                print(
+                    "PARTIDA CONFIGURADA:",
+                    wins_to_finish,
+                    "VITÓRIA(S) PARA VENCER."
+                )
+
+
+                # ==================================
+                # AVISAR OS DOIS
+                # ==================================
+
+                await broadcast(
+                    room,
+                    {
+                        "type": "match_config",
+                        "wins_to_finish":
+                            wins_to_finish,
+                        "score": {
+                            1: room["score"][1],
+                            2: room["score"][2]
+                        }
+                    }
+                )
+
+
+                continue
+
+
+            # ======================================
+            # JOGAR NOVAMENTE
+            # ======================================
+
+            if message_type == "play_again":
+
+                # ==================================
+                # CADA JOGADOR PRECISA CONFIRMAR
+                # ==================================
+
+                room.setdefault(
+                    "play_again_ready",
+                    {1: False, 2: False}
+                )
+
+                room["play_again_ready"][player_number] = True
+
+                ready = room["play_again_ready"]
+
+                if not (
+                    ready.get(1, False)
+                    and ready.get(2, False)
+                ):
+
+                    await websocket.send_json({
+                        "type": "play_again_waiting"
+                    })
+
+                    continue
+
+
+                # ==================================
+                # OS DOIS CONFIRMARAM
+                # ==================================
+
+                room["play_again_ready"] = {
+                    1: False,
+                    2: False
+                }
+
+                room["characters"] = {}
+
+                room["bet"] = None
+
+                room["new_round"] = False
+
+                room["config_controller"] = None
+
+                room["score"] = {
+                    1: 0,
+                    2: 0
+                }
+
+
+                print(
+                    "NOVA PARTIDA CONFIRMADA PELOS DOIS JOGADORES."
+                )
+
+
+                await broadcast(
+                    room,
+                    {
+                        "type": "play_again",
+                        "score": {
+                            1: 0,
+                            2: 0
+                        },
+                        "wins_to_finish":
+                            room["wins_to_finish"]
+                    }
+                )
+
+
+                continue
+
+
+            # ======================================
+            # MUDAR CONFIGURAÇÃO
+            # ======================================
+
+            if message_type == "change_match_config":
+
+                # ==================================
+                # SOMENTE UMA SOLICITAÇÃO POR VEZ
+                # ==================================
+
+                if room.get("config_controller") is not None:
+                    continue
+
+
+                room["config_controller"] = player_number
+
+
+                await broadcast(
+                    room,
+                    {
+                        "type":
+                            "change_match_config",
+                        "wins_to_finish":
+                            room["wins_to_finish"],
+                        "score": {
+                            1: room["score"][1],
+                            2: room["score"][2]
+                        },
+                        "configurator":
+                            player_number
+                    }
+                )
+
+
+                continue
 
 
             # ======================================
@@ -389,6 +723,7 @@ async def websocket_endpoint(
                     ):
 
                         room["characters"] = {}
+
                         room["new_round"] = False
 
                         game_boards_message = {
@@ -452,6 +787,7 @@ async def websocket_endpoint(
 
                 continue
 
+
             # ======================================
             # PERSONAGEM ESCOLHIDO
             # ======================================
@@ -461,6 +797,7 @@ async def websocket_endpoint(
                 image = message.get(
                     "image"
                 )
+
 
                 if not image:
                     continue
@@ -527,7 +864,6 @@ async def websocket_endpoint(
 
                     # ==================================
                     # AVISAR O ADVERSÁRIO
-                    # E ENVIAR O NOVO PERSONAGEM
                     # ==================================
 
                     if opponent_socket is not None:
@@ -580,14 +916,12 @@ async def websocket_endpoint(
 
                 continue
 
+
             # ======================================
             # APOSTA EM ANDAMENTO
             # ======================================
 
             if message_type == "bet_in_progress":
-
-                # Não permite iniciar outra aposta
-                # enquanto já existe uma em andamento.
 
                 if room["bet"] is not None:
                     continue
@@ -630,8 +964,6 @@ async def websocket_endpoint(
 
             if message_type == "make_bet":
 
-                # Não permite duas apostas simultâneas.
-
                 if room["bet"] is not None:
                     continue
 
@@ -655,7 +987,6 @@ async def websocket_endpoint(
 
                 # ==================================
                 # VERIFICAR SE A CARTA EXISTE
-                # NA PARTIDA
                 # ==================================
 
                 player1_board = room["boards"].get(
@@ -680,8 +1011,7 @@ async def websocket_endpoint(
 
 
                 # ==================================
-                # VERIFICAR SE O JOGADOR
-                # ESCOLHEU UM PERSONAGEM
+                # VERIFICAR PERSONAGEM
                 # ==================================
 
                 if player_number not in room["characters"]:
@@ -758,32 +1088,32 @@ async def websocket_endpoint(
                     room["bet"] = None
 
 
-                opponent = (
-                    2
-                    if player_number == 1
-                    else 1
-                )
+                    opponent = (
+                        2
+                        if player_number == 1
+                        else 1
+                    )
 
 
-                opponent_socket = room["players"].get(
-                    opponent
-                )
+                    opponent_socket = room["players"].get(
+                        opponent
+                    )
 
 
-                if opponent_socket is not None:
+                    if opponent_socket is not None:
 
-                    try:
+                        try:
 
-                        await opponent_socket.send_json({
-                            "type": "bet_cancelled"
-                        })
+                            await opponent_socket.send_json({
+                                "type": "bet_cancelled"
+                            })
 
-                    except Exception as error:
+                        except Exception as error:
 
-                        print(
-                            "ERRO AO AVISAR CANCELAMENTO DA APOSTA:",
-                            repr(error)
-                        )
+                            print(
+                                "ERRO AO AVISAR CANCELAMENTO DA APOSTA:",
+                                repr(error)
+                            )
 
 
                 continue
@@ -795,8 +1125,6 @@ async def websocket_endpoint(
 
             if message_type == "reveal_bet_result":
 
-                # Só pode revelar se existir uma aposta.
-
                 if room["bet"] is None:
                     continue
 
@@ -804,8 +1132,9 @@ async def websocket_endpoint(
                 bet = room["bet"]
 
 
-                # Apenas o jogador que recebeu
-                # a aposta pode revelar.
+                # ==================================
+                # APENAS O DEFENSOR PODE REVELAR
+                # ==================================
 
                 if bet["opponent"] != player_number:
                     continue
@@ -816,8 +1145,8 @@ async def websocket_endpoint(
                 # ==================================
 
                 selected_character = room["characters"].get(
-                        player_number
-                    )
+                    player_number
+                )
 
 
                 if not selected_character:
@@ -833,17 +1162,22 @@ async def websocket_endpoint(
                     == selected_character
                 )
 
+
                 bettor = bet["player"]
+
 
                 bettor_socket = room["players"].get(
                     bettor
                 )
 
+
                 opponent = bet["opponent"]
+
 
                 opponent_socket = room["players"].get(
                     opponent
                 )
+
 
                 # ==================================
                 # APOSTA CORRETA
@@ -851,51 +1185,153 @@ async def websocket_endpoint(
 
                 if is_correct:
 
-                    room["new_round"] = True
+                    # ==================================
+                    # O APOSTADOR VENCE A RODADA
+                    # ==================================
 
-                    # O apostador venceu.
-                    # Ele precisa iniciar a nova rodada.
+                    round_winner = bettor
 
-                    if bettor_socket is not None:
 
-                        try:
+                    # ==================================
+                    # INCREMENTAR PLACAR
+                    # ==================================
 
-                            await bettor_socket.send_json({
-                                "type": "bet_won",
-                                "bet_image": bet["card_image"],
-                                "cards": (
-                                    room["boards"].get(1, [])
-                                    + room["boards"].get(2, [])
+                    room["score"][round_winner] += 1
+
+
+                    current_score = {
+                        1: room["score"][1],
+                        2: room["score"][2]
+                    }
+
+
+                    print(
+                        "JOGADOR",
+                        round_winner,
+                        "VENCEU A RODADA."
+                    )
+
+
+                    # ==================================
+                    # AVISAR RESULTADO DA RODADA
+                    # ==================================
+
+                    await broadcast(
+                        room,
+                        {
+                            "type": "round_won",
+                            "winner": round_winner,
+                            "loser": opponent,
+                            "bet_image":
+                                bet["card_image"],
+                            "score": current_score
+                        }
+                    )
+
+
+                    # ==================================
+                    # ATUALIZAR PLACAR
+                    # ==================================
+
+                    await broadcast(
+                        room,
+                        {
+                            "type": "score_update",
+                            "score": current_score
+                        }
+                    )
+
+
+                    # ==================================
+                    # VERIFICAR VITÓRIA DA PARTIDA
+                    # ==================================
+
+                    if (
+                        room["score"][round_winner]
+                        >= room["wins_to_finish"]
+                    ):
+
+                        print(
+                            "JOGADOR",
+                            round_winner,
+                            "VENCEU A PARTIDA."
+                        )
+
+
+                        # ==================================
+                        # FINALIZAR PARTIDA
+                        # ==================================
+
+                        room["new_round"] = False
+
+
+                        await broadcast(
+                            room,
+                            {
+                                "type": "match_won",
+                                "winner": round_winner,
+                                "score": current_score,
+                                "wins_to_finish":
+                                    room["wins_to_finish"]
+                            }
+                        )
+
+
+                    else:
+
+                        # ==================================
+                        # AINDA HÁ OUTRAS RODADAS
+                        # ==================================
+
+                        room["new_round"] = True
+
+
+                        # ==================================
+                        # AVISAR O VENCEDOR DA RODADA
+                        # ==================================
+
+                        if bettor_socket is not None:
+
+                            try:
+
+                                await bettor_socket.send_json({
+                                    "type": "bet_won",
+                                    "bet_image":
+                                        bet["card_image"],
+                                    "cards": (
+                                        room["boards"].get(1, [])
+                                        + room["boards"].get(2, [])
+                                    )
+                                })
+
+                            except Exception as error:
+
+                                print(
+                                    "ERRO AO AVISAR VENCEDOR DA APOSTA:",
+                                    repr(error)
                                 )
-                            })
-
-                        except Exception as error:
-
-                            print(
-                                "ERRO AO AVISAR VENCEDOR DA APOSTA:",
-                                repr(error)
-                            )
 
 
-                    # O jogador que teve o personagem
-                    # descoberto perdeu a rodada.
-                    # O tabuleiro dele permanece intacto.
+                        # ==================================
+                        # AVISAR O PERDEDOR DA RODADA
+                        # ==================================
 
-                    if opponent_socket is not None:
+                        if opponent_socket is not None:
 
-                        try:
+                            try:
 
-                            await opponent_socket.send_json({
-                                "type": "bet_lost",
-                                "bet_image": bet["card_image"]
-                            })
+                                await opponent_socket.send_json({
+                                    "type": "bet_lost",
+                                    "bet_image":
+                                        bet["card_image"]
+                                })
 
-                        except Exception as error:
+                            except Exception as error:
 
-                            print(
-                                "ERRO AO AVISAR PERDEDOR DA APOSTA:",
-                                repr(error)
-                            )
+                                print(
+                                    "ERRO AO AVISAR PERDEDOR DA APOSTA:",
+                                    repr(error)
+                                )
 
 
                 # ==================================
@@ -911,8 +1347,10 @@ async def websocket_endpoint(
                             await bettor_socket.send_json({
                                 "type": "bet_result",
                                 "correct": False,
-                                "bet_index": bet["card_index"],
-                                "bet_image": bet["card_image"]
+                                "bet_index":
+                                    bet["card_index"],
+                                "bet_image":
+                                    bet["card_image"]
                             })
 
                         except Exception as error:
@@ -930,7 +1368,8 @@ async def websocket_endpoint(
                             await opponent_socket.send_json({
                                 "type": "bet_resolved",
                                 "correct": False,
-                                "bet_image": bet["card_image"]
+                                "bet_image":
+                                    bet["card_image"]
                             })
 
                         except Exception as error:
@@ -957,6 +1396,7 @@ async def websocket_endpoint(
 
 
                 continue
+
 
             # ======================================
             # OUTRAS MENSAGENS DO JOGO
