@@ -11,6 +11,49 @@
     const chatForm = document.getElementById("chatForm");
     const chatInput = document.getElementById("chatInput");
 
+    let unreadCount = 0;
+    let notificationDot = null;
+
+    // ==========================================
+    // NOTIFICAÇÃO DE NOVA MENSAGEM
+    // ==========================================
+
+    function createNotificationDot() {
+
+        if (!chatToggle || notificationDot) {
+            return;
+        }
+
+        notificationDot = document.createElement("span");
+        notificationDot.className = "chat-notification";
+        notificationDot.setAttribute("aria-label", "Nova mensagem");
+        notificationDot.hidden = true;
+
+        chatToggle.appendChild(notificationDot);
+    }
+
+
+    function showNotification() {
+
+        createNotificationDot();
+
+        unreadCount += 1;
+
+        if (notificationDot) {
+            notificationDot.hidden = false;
+        }
+    }
+
+
+    function clearNotification() {
+
+        unreadCount = 0;
+
+        if (notificationDot) {
+            notificationDot.hidden = true;
+        }
+    }
+
 
     // ==========================================
     // ABRIR CHAT
@@ -21,6 +64,7 @@
         if (!chatPanel) return;
 
         chatPanel.hidden = false;
+        clearNotification();
 
         if (chatInput) {
             chatInput.focus();
@@ -44,46 +88,28 @@
     // ADICIONAR MENSAGEM
     // ==========================================
 
-    function addChatMessage(text, ownMessage) {
+    function addChatMessage(text, sender) {
 
-        if (!chatMessages) return;
-
-        if (!text) return;
-
+        if (!chatMessages || !text) return;
 
         const messageElement = document.createElement("div");
 
-        messageElement.className =
-            ownMessage
-                ? "chat-message own"
-                : "chat-message opponent";
+        const senderNumber = Number(sender);
 
+        messageElement.className =
+            senderNumber === 1
+                ? "chat-message player1"
+                : "chat-message player2";
 
         messageElement.textContent = text;
 
+        chatMessages.appendChild(messageElement);
 
-        chatMessages.appendChild(
-            messageElement
-        );
-
-
-        // ======================================
-        // MANTER APENAS AS 2 ÚLTIMAS
-        // ======================================
-
-        while (
-            chatMessages.children.length > 2
-        ) {
-
+        while (chatMessages.children.length > 2) {
             chatMessages.removeChild(
                 chatMessages.firstElementChild
             );
         }
-
-
-        // ======================================
-        // ROLAR PARA BAIXO
-        // ======================================
 
         chatMessages.scrollTop =
             chatMessages.scrollHeight;
@@ -99,6 +125,7 @@
         if (!chatMessages) return;
 
         chatMessages.innerHTML = "";
+        clearNotification();
     }
 
 
@@ -110,37 +137,21 @@
 
         if (!chatInput) return;
 
-
-        const text =
-            chatInput.value.trim();
-
+        const text = chatInput.value.trim();
 
         if (!text) return;
 
-
-        // ======================================
-        // VERIFICAR WEBSOCKET
-        // ======================================
-
         if (
-            typeof socket === "undefined"
-            || socket === null
-            || socket.readyState !== WebSocket.OPEN
+            typeof socket === "undefined" ||
+            socket === null ||
+            socket.readyState !== WebSocket.OPEN
         ) {
-
             return;
         }
 
-
-        // ======================================
-        // ENVIAR PELO MESMO WEBSOCKET DO JOGO
-        // ======================================
-
         try {
 
-            if (
-                typeof sendGameMessage === "function"
-            ) {
+            if (typeof sendGameMessage === "function") {
 
                 sendGameMessage({
                     type: "chat_message",
@@ -157,19 +168,9 @@
                 );
             }
 
-
-            // ==================================
-            // MOSTRAR PRÓPRIA MENSAGEM
-            // ==================================
-
-            addChatMessage(
-                text,
-                true
-            );
-
-
+            // A mensagem própria aparece quando o servidor devolve
+            // o evento, evitando duplicação.
             chatInput.value = "";
-
 
         } catch (error) {
 
@@ -189,23 +190,35 @@
 
         if (!data) return;
 
-
         const text =
-            data.message
-            || data.text;
-
+            data.message ||
+            data.text;
 
         if (!text) return;
 
-
-        // ======================================
-        // MENSAGEM RECEBIDA É DO ADVERSÁRIO
-        // ======================================
-
-        addChatMessage(
-            text,
-            false
+        const sender = Number(data.sender);
+        const localPlayer = Number(
+            typeof playerNumber !== "undefined"
+                ? playerNumber
+                : 0
         );
+
+        if (sender !== 1 && sender !== 2) {
+            return;
+        }
+
+        addChatMessage(text, sender);
+
+        // Notifica somente mensagens do outro jogador.
+        if (sender !== localPlayer) {
+
+            if (
+                !chatPanel ||
+                chatPanel.hidden
+            ) {
+                showNotification();
+            }
+        }
     }
 
 
@@ -215,13 +228,15 @@
 
     if (chatToggle) {
 
+        createNotificationDot();
+
         chatToggle.addEventListener(
             "click",
             function () {
 
                 if (
-                    chatPanel
-                    && chatPanel.hidden
+                    chatPanel &&
+                    chatPanel.hidden
                 ) {
 
                     openChat();
@@ -244,7 +259,6 @@
         chatClose.addEventListener(
             "click",
             function () {
-
                 closeChat();
             }
         );
@@ -252,7 +266,7 @@
 
 
     // ==========================================
-    // FORMULÁRIO DO CHAT
+    // FORMULÁRIO
     // ==========================================
 
     if (chatForm) {
@@ -262,16 +276,11 @@
             function (event) {
 
                 event.preventDefault();
-
                 sendChatMessage();
             }
         );
     }
 
-
-    // ==========================================
-    // FUNÇÕES DISPONÍVEIS GLOBALMENTE
-    // ==========================================
 
     window.handleChatMessage =
         handleChatMessage;

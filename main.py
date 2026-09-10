@@ -1298,6 +1298,7 @@ async def websocket_endpoint(
                                     "type": "bet_won",
                                     "bet_image":
                                         bet["card_image"],
+                                    "score": current_score,
                                     "cards": (
                                         room["boards"].get(1, [])
                                         + room["boards"].get(2, [])
@@ -1394,6 +1395,48 @@ async def websocket_endpoint(
                     else "INCORRETA"
                 )
 
+
+                continue
+
+
+            # ======================================
+            # CHAT
+            # ======================================
+
+            if message_type == "chat_message":
+
+                chat_text = message.get("message")
+
+                if not isinstance(chat_text, str):
+                    continue
+
+                chat_text = chat_text.strip()
+
+                if not chat_text:
+                    continue
+
+                # O servidor informa quem enviou a mensagem.
+                # Assim o cliente consegue usar a cor correta
+                # mesmo sem depender de "minha mensagem".
+                for player_number_target, player in room["players"].items():
+
+                    if player is None:
+                        continue
+
+                    try:
+
+                        await player.send_json({
+                            "type": "chat_message",
+                            "message": chat_text,
+                            "sender": player_number
+                        })
+
+                    except Exception as error:
+
+                        print(
+                            "ERRO AO ENVIAR MENSAGEM DO CHAT:",
+                            repr(error)
+                        )
 
                 continue
 

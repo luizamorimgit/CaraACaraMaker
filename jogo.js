@@ -195,7 +195,7 @@ function receiveMatchConfig(data) {
 
 
     if (
-        [1, 3, 5, 7].includes(value)
+        [1, 2, 3, 5, 7].includes(value)
     ) {
 
         winsToFinish =
@@ -2738,6 +2738,21 @@ function handleGameMessage(data) {
 
         betInProgress =
             false;
+
+
+        // O servidor envia o placar junto com a vitória.
+        // Isso garante que a pontuação seja atualizada
+        // imediatamente no cliente vencedor.
+        if (
+            data.score &&
+            typeof updateMatchScore === "function"
+        ) {
+
+            updateMatchScore(
+                data.score[1] ?? data.score["1"] ?? 0,
+                data.score[2] ?? data.score["2"] ?? 0
+            );
+        }
 
 
         hideWaitingOverlay();
