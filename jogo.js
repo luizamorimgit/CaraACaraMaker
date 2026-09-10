@@ -2644,6 +2644,32 @@ function handleGameMessage(data) {
     }
 
     // ======================================
+    // IGNORAR EVENTOS DE APOSTA APÓS O FIM
+    // ======================================
+
+    // O servidor pode enviar o resultado da aposta
+    // depois de match_won. Nesse caso, não podemos
+    // abrir outro popup por cima da tela final.
+    if (
+        matchFinished &&
+        (
+            data.type === "bet_started" ||
+            data.type === "bet_lock_denied" ||
+            data.type === "bet_cancelled" ||
+            data.type === "bet_result" ||
+            data.type === "bet_correct" ||
+            data.type === "bet_wrong"
+        )
+    ) {
+        betSelectionActive = false;
+        betWaitingResult = false;
+        betInProgress = false;
+        disableBetSelection();
+        hideWaitingOverlay();
+        return;
+    }
+
+    // ======================================
     // RESULTADO DA APOSTA
     // ======================================
 

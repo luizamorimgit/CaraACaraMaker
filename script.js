@@ -247,10 +247,6 @@ function openMatchConfig(
     controller = null
 ) {
 
-    if (typeof hideWaitingOverlay === "function") {
-        hideWaitingOverlay();
-    }
-
     matchConfigMode =
         mode === "change"
             ? "change"
@@ -478,6 +474,10 @@ updateWinsSelector();
 // ==========================================
 
 function backToLobby() {
+
+    if (matchConfigMode === "change" && Number(playerNumber) !== 1) {
+        return;
+    }
 
     stopCreatingAnimation();
 
@@ -1014,6 +1014,8 @@ function connectToRoom(
     );
 
 
+    pageExitNotified = false;
+
     const newSocket =
         new WebSocket(url);
 
@@ -1397,11 +1399,6 @@ function handleServerMessage(data) {
         updateWinsSelector();
 
 
-        if (typeof hideWaitingOverlay === "function") {
-            hideWaitingOverlay();
-        }
-
-
         console.log(
             "Partida configurada para:",
             winsToFinish,
@@ -1611,18 +1608,7 @@ function handleServerMessage(data) {
 
 
         waitingMessage.textContent =
-            "JOGADOR " +
-            leavingPlayer +
-            " SAIU DA SALA.";
-
-
-        if (typeof hideWaitingOverlay === "function") {
-            hideWaitingOverlay();
-        }
-
-        if (typeof closePopup === "function") {
-            closePopup();
-        }
+            "AGUARDANDO OUTRO JOGADOR...";
 
 
         if (
@@ -1669,7 +1655,7 @@ function handleServerMessage(data) {
             "JOGADOR SAIU",
             "JOGADOR " +
             leavingPlayer +
-            " SAIU DA SALA.\n\nVOCÊ NÃO FICARÁ PRESO NESTA TELA.",
+            " SAIU DA SALA.",
             null,
             "OK"
         );
@@ -1918,6 +1904,52 @@ function handleServerMessage(data) {
         );
     }
 }
+
+
+// ==========================================
+// AVISAR SAÍDA AO ATUALIZAR/FECHAR A PÁGINA
+// ==========================================
+//
+// Quando o jogador atualiza a página, o botão
+// de sair não é executado. Enviamos leave_room
+// enquanto o WebSocket ainda está aberto para que
+// o servidor avise imediatamente o outro jogador.
+// ==========================================
+
+let pageExitNotified = false;
+
+function notifyPageExit() {
+
+    if (pageExitNotified) {
+        return;
+    }
+
+    if (
+        socket &&
+        socket.readyState === WebSocket.OPEN
+    ) {
+
+        pageExitNotified = true;
+
+        try {
+            socket.send(
+                JSON.stringify({
+                    type: "leave_room"
+                })
+            );
+        } catch (error) {
+            console.error(
+                "Erro ao avisar saída da página:",
+                error
+            );
+        }
+    }
+}
+
+window.addEventListener(
+    "pagehide",
+    notifyPageExit
+);
 
 
 // ==========================================
