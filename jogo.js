@@ -272,7 +272,25 @@ function receiveGameBoards(
     images2
 ) {
 
+    // Os dois tabuleiros chegaram. A partir daqui começa
+    // uma nova escolha de personagem. Limpamos qualquer
+    // estado antigo para não bloquear a transição.
     matchFinished = false;
+    gameStarted = false;
+    gameInitialized = false;
+
+    characterChoiceConfirmed = false;
+    opponentChoiceConfirmed = false;
+    selectedCharacter = null;
+    opponentCharacter = null;
+
+    if (typeof hideWaitingOverlay === "function") {
+        hideWaitingOverlay();
+    }
+
+    if (typeof closePopup === "function") {
+        closePopup();
+    }
 
     if (!Array.isArray(images1)) {
         images1 = [];
