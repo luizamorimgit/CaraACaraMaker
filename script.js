@@ -15,92 +15,6 @@ let socketGeneration = 0;
 
 let retryTimer = null;
 
-// ==========================================
-// DIAGNÓSTICO TEMPORÁRIO
-// ==========================================
-
-function ccmDebug(message, detail) {
-
-    const text =
-        "[CCM] " +
-        message +
-        (detail ? " | " + detail : "");
-
-    console.log(text);
-
-    let panel =
-        document.getElementById("ccmDebugPanel");
-
-    if (!panel) {
-
-        panel =
-            document.createElement("div");
-
-        panel.id =
-            "ccmDebugPanel";
-
-        panel.style.cssText =
-            "position:fixed;" +
-            "left:8px;" +
-            "right:8px;" +
-            "bottom:8px;" +
-            "z-index:999999;" +
-            "max-height:42vh;" +
-            "overflow:auto;" +
-            "padding:10px;" +
-            "background:#111;" +
-            "color:#fff;" +
-            "font:12px monospace;" +
-            "border-radius:10px;" +
-            "box-shadow:0 4px 20px rgba(0,0,0,.35);";
-
-        document.body.appendChild(panel);
-    }
-
-    const line =
-        document.createElement("div");
-
-    line.textContent =
-        text;
-
-    panel.appendChild(line);
-
-    panel.scrollTop =
-        panel.scrollHeight;
-}
-
-
-window.addEventListener(
-    "error",
-    function (event) {
-
-        ccmDebug(
-            "ERRO JS",
-            event.message +
-            " @ linha " +
-            event.lineno
-        );
-    }
-);
-
-
-window.addEventListener(
-    "unhandledrejection",
-    function (event) {
-
-        ccmDebug(
-            "PROMISE",
-            String(event.reason)
-        );
-    }
-);
-
-ccmDebug(
-    "SCRIPT CARREGADO",
-    "playerNumber=" + String(playerNumber)
-);
-
-
 
 // ==========================================
 // CONFIGURAÇÃO DA PARTIDA - v3.0
@@ -1162,11 +1076,6 @@ function connectToRoom(
     newSocket.onopen =
         function () {
 
-            ccmDebug(
-                "1 WebSocket ABERTO",
-                "sala=" + code + " ação=" + action
-            );
-
             if (
                 socket !== newSocket ||
                 socketGeneration !== currentGeneration
@@ -1457,20 +1366,7 @@ function handleServerMessage(data) {
 
     if (data.type === "game_boards") {
 
-        ccmDebug(
-            "3 game_boards RECEBIDO",
-            "J1=" +
-                (Array.isArray(data.player1) ? data.player1.length : "não-array") +
-                " J2=" +
-                (Array.isArray(data.player2) ? data.player2.length : "não-array")
-        );
-
         if (typeof handleGameMessage === "function") {
-
-            ccmDebug(
-                "4 chamando handleGameMessage",
-                "game_boards"
-            );
             handleGameMessage(data);
         }
 
@@ -3636,14 +3532,6 @@ function closePopup() {
 // ==========================================
 
 function boardConfirmed() {
-
-    ccmDebug(
-        "2 board_ready ENVIADO?",
-        "socket=" +
-            (socket ? socket.readyState : "null") +
-            " imagens=" +
-            (Array.isArray(boardImages) ? boardImages.length : "não-array")
-    );
 
     waitingMessage.textContent =
         "SEU TABULEIRO FOI CONFIRMADO.";
