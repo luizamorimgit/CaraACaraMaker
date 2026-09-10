@@ -1740,7 +1740,7 @@ function openMatchFinishedPopup(
     openCustomPopup(
         title,
         message +
-        " Placar final: " +
+        "\nPlacar final: " +
         player1Score +
         " × " +
         player2Score +
@@ -2334,24 +2334,6 @@ function handleGameMessage(data) {
 
 
     // ======================================
-    // JOGAR NOVAMENTE: AGUARDANDO ADVERSÁRIO
-    // ======================================
-
-    if (
-        data.type ===
-        "play_again_waiting"
-    ) {
-
-        showWaitingOverlay(
-            "AGUARDANDO",
-            "Aguardando o outro jogador..."
-        );
-
-        return;
-    }
-
-
-    // ======================================
     // NOVA PARTIDA
     // ======================================
 
@@ -2390,6 +2372,9 @@ function handleGameMessage(data) {
 
 
         hideWaitingOverlay();
+
+
+        closePopup();
 
 
         openCharacterChoice();

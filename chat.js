@@ -109,9 +109,8 @@
                 : "opponent";
 
         messageElement.className =
-            senderNumber === 1
-                ? `chat-message player1 ${positionClass}`
-                : `chat-message player2 ${positionClass}`;
+            `chat-message ${positionClass} ` +
+            (senderNumber === 1 ? "player1" : "player2");
 
         messageElement.textContent = text;
 

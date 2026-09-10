@@ -2689,7 +2689,7 @@ body.dark .chat-message.player2 {
 
 
 /* Posicionamento do chat: sempre o jogador atual à direita
-   e o adversário à esquerda. */
+   e o adversário à esquerda. As cores continuam identificando J1/J2. */
 .chat-message.mine {
     align-self: flex-end;
     text-align: right;
