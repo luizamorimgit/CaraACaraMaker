@@ -10,6 +10,8 @@
 
 let gameCards = [];
 
+ccmDebug("JOGO.JS CARREGADO", "playerNumber=" + String(playerNumber));
+
 let myBoardImages = [];
 let opponentBoardImages = [];
 
@@ -176,6 +178,15 @@ function receiveGameBoards(
     images2
 ) {
 
+    ccmDebug(
+        "5 receiveGameBoards",
+        "J1=" +
+            (Array.isArray(images1) ? images1.length : "não-array") +
+            " J2=" +
+            (Array.isArray(images2) ? images2.length : "não-array") +
+            " player=" + String(playerNumber)
+    );
+
     if (!Array.isArray(images1)) {
         images1 = [];
     }
@@ -238,6 +249,10 @@ function receiveGameBoards(
 
     shuffleGameCards();
 
+    ccmDebug(
+        "6 cartas montadas",
+        "total=" + String(gameCards.length)
+    );
 
     openCharacterChoice();
 }
@@ -279,6 +294,14 @@ function shuffleGameCards() {
 
 function openCharacterChoice() {
 
+    ccmDebug(
+        "7 openCharacterChoice",
+        "choiceScreen=" +
+            String(!!characterChoiceScreen) +
+            " choiceBoard=" +
+            String(!!choiceBoard)
+    );
+
     // Garante que os elementos da tela existam antes
     // de tentar abrir a escolha de personagem.
     if (!characterChoiceScreen || !choiceBoard) {
@@ -302,6 +325,10 @@ function openCharacterChoice() {
 
     renderCharacterChoice();
 
+    ccmDebug(
+        "8 abrindo tela characterChoice",
+        "cartas=" + String(gameCards.length)
+    );
 
     showScreen(
         characterChoiceScreen
@@ -2129,6 +2156,11 @@ function openCustomPopup(
 // ==========================================
 
 function handleGameMessage(data) {
+
+    ccmDebug(
+        "HANDLE GAME",
+        data && data.type ? String(data.type) : "sem type"
+    );
 
     if (!data || !data.type) {
         return;
