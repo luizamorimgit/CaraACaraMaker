@@ -73,6 +73,7 @@ let gameStatus = null;
 let gameRoomCode = null;
 let choiceRoomCode = null;
 let matchScoreElement = null;
+let gameElementsInitialized = false;
 
 
 // ==========================================
@@ -80,6 +81,10 @@ let matchScoreElement = null;
 // ==========================================
 
 function initializeGameElements() {
+
+    if (gameElementsInitialized) {
+        return;
+    }
 
     gameScreen =
         document.getElementById("game");
@@ -166,6 +171,8 @@ function initializeGameElements() {
             }
         );
     }
+
+    gameElementsInitialized = true;
 }
 
 
@@ -271,6 +278,10 @@ function receiveGameBoards(
     images1,
     images2
 ) {
+
+    // Garantir que os elementos da tela estejam inicializados
+    // antes de tentar abrir a escolha de personagem.
+    initializeGameElements();
 
     // Os dois tabuleiros chegaram. A partir daqui começa
     // uma nova escolha de personagem. Limpamos qualquer
