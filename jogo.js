@@ -41,19 +41,6 @@ let replacementSelectionIndex = null;
 
 let waitingOverlay = null;
 
-// ==========================================
-// ESTADO DA PARTIDA / PLACAR
-// ==========================================
-
-let matchScore = {
-    1: 0,
-    2: 0
-};
-
-let winsToFinish = 1;
-let matchFinished = false;
-
-
 
 // ==========================================
 // ELEMENTOS DO JOGO
@@ -72,8 +59,6 @@ let saveBoardButton = null;
 let gameStatus = null;
 let gameRoomCode = null;
 let choiceRoomCode = null;
-let matchScoreElement = null;
-let gameElementsInitialized = false;
 
 
 // ==========================================
@@ -81,10 +66,6 @@ let gameElementsInitialized = false;
 // ==========================================
 
 function initializeGameElements() {
-
-    if (gameElementsInitialized) {
-        return;
-    }
 
     gameScreen =
         document.getElementById("game");
@@ -115,14 +96,6 @@ function initializeGameElements() {
 
     choiceRoomCode =
         document.getElementById("choiceRoomCode");
-
-    matchScoreElement =
-        document.getElementById("matchScore");
-
-    updateMatchScore(
-        matchScore[1],
-        matchScore[2]
-    );
 
 
     // ======================================
@@ -171,8 +144,6 @@ function initializeGameElements() {
             }
         );
     }
-
-    gameElementsInitialized = true;
 }
 
 
@@ -190,80 +161,6 @@ document.addEventListener(
 
 
 // ==========================================
-// ATUALIZAR PLACAR
-// ==========================================
-
-function updateMatchScore(score1, score2) {
-
-    const parsedScore1 = Number(score1);
-    const parsedScore2 = Number(score2);
-
-    if (Number.isFinite(parsedScore1)) {
-        matchScore[1] = parsedScore1;
-    }
-
-    if (Number.isFinite(parsedScore2)) {
-        matchScore[2] = parsedScore2;
-    }
-
-    if (matchScoreElement) {
-        matchScoreElement.textContent =
-            "J1 — " +
-            matchScore[1] +
-            " × " +
-            matchScore[2] +
-            " — J2";
-    }
-}
-
-function receiveMatchConfig(data = {}) {
-
-    const configuredWins =
-        Number(data.wins_to_finish);
-
-    if ([1, 3, 5, 10].includes(configuredWins)) {
-        winsToFinish = configuredWins;
-    }
-
-    if (data.score) {
-        updateMatchScore(
-            data.score[1] ?? data.score["1"] ?? 0,
-            data.score[2] ?? data.score["2"] ?? 0
-        );
-    } else {
-        updateMatchScore(0, 0);
-    }
-
-    matchFinished = false;
-}
-
-function receiveScoreUpdate(data = {}) {
-
-    if (data.score) {
-        updateMatchScore(
-            data.score[1] ?? data.score["1"] ?? 0,
-            data.score[2] ?? data.score["2"] ?? 0
-        );
-        return;
-    }
-
-    updateMatchScore(
-        data.player1_score ?? matchScore[1],
-        data.player2_score ?? matchScore[2]
-    );
-}
-
-function resetMatchState() {
-
-    matchScore[1] = 0;
-    matchScore[2] = 0;
-    matchFinished = false;
-
-    updateMatchScore(0, 0);
-}
-
-
-// ==========================================
 // RECEBER OS 12 PERSONAGENS
 // ==========================================
 //
@@ -278,30 +175,6 @@ function receiveGameBoards(
     images1,
     images2
 ) {
-
-    // Garantir que os elementos da tela estejam inicializados
-    // antes de tentar abrir a escolha de personagem.
-    initializeGameElements();
-
-    // Os dois tabuleiros chegaram. A partir daqui começa
-    // uma nova escolha de personagem. Limpamos qualquer
-    // estado antigo para não bloquear a transição.
-    matchFinished = false;
-    gameStarted = false;
-    gameInitialized = false;
-
-    characterChoiceConfirmed = false;
-    opponentChoiceConfirmed = false;
-    selectedCharacter = null;
-    opponentCharacter = null;
-
-    if (typeof hideWaitingOverlay === "function") {
-        hideWaitingOverlay();
-    }
-
-    if (typeof closePopup === "function") {
-        closePopup();
-    }
 
     if (!Array.isArray(images1)) {
         images1 = [];
@@ -406,27 +279,35 @@ function shuffleGameCards() {
 
 function openCharacterChoice() {
 
-if (!characterChoiceScreen) {
-    return;
+    // Garante que os elementos da tela existam antes
+    // de tentar abrir a escolha de personagem.
+    if (!characterChoiceScreen || !choiceBoard) {
+        initializeGameElements();
+    }
+
+    if (!characterChoiceScreen) {
+        console.error(
+            "Tela de escolha de personagem não encontrada."
+        );
+        return;
+    }
+
+
+    if (choiceRoomCode) {
+
+        choiceRoomCode.textContent =
+            roomCode || "----";
+    }
+
+
+    renderCharacterChoice();
+
+
+    showScreen(
+        characterChoiceScreen
+    );
+
 }
-
-
-if (choiceRoomCode) {
-
-    choiceRoomCode.textContent =
-        roomCode || "----";
-}
-
-
-renderCharacterChoice();
-
-
-showScreen(
-    characterChoiceScreen
-);
-
-}
-
 
 // ==========================================
 // MOSTRAR AS 12 CARTAS
@@ -738,10 +619,6 @@ function opponentCharacterConfirmed() {
 // ==========================================
 
 function startGame() {
-
-    if (matchFinished) {
-        return;
-    }
 
     if (gameStarted) {
         return;
@@ -1456,8 +1333,6 @@ function startCharacterReplacement() {
     characterChoiceConfirmed = false;
     replacementSelectionIndex = null;
 
-    resetMatchState();
-
     hideWaitingOverlay();
 
     openCharacterReplacementPopup();
@@ -1821,202 +1696,6 @@ function showReplacementWaitingIfNeeded() {
             "AGUARDE O OUTRO JOGADOR",
             "O outro jogador está escolhendo um novo personagem."
         );
-    }
-}
-
-
-// ==========================================
-// RODADA VENCIDA
-// ==========================================
-
-function handleRoundWon(data = {}) {
-
-    receiveScoreUpdate(data);
-
-    betSelectionActive = false;
-    betWaitingResult = false;
-    betInProgress = false;
-
-    setGameLock(
-        true,
-        "round",
-        false
-    );
-
-    if (gameStatus) {
-        const winner = Number(data.winner);
-
-        gameStatus.textContent =
-            winner === Number(playerNumber)
-                ? "VOCÊ VENCEU A RODADA!"
-                : "O OUTRO JOGADOR VENCEU A RODADA.";
-    }
-}
-
-
-// ==========================================
-// PARTIDA VENCIDA
-// ==========================================
-
-function closeBetUI() {
-
-    betSelectionActive = false;
-    betWaitingResult = false;
-    betInProgress = false;
-
-    disableBetSelection();
-    hideWaitingOverlay();
-    closePopup();
-
-    if (betButton) {
-        betButton.disabled = true;
-    }
-}
-
-
-function handleMatchWon(data = {}) {
-
-    closeBetUI();
-
-    receiveScoreUpdate(data);
-
-    const winner = Number(data.winner);
-    const iWon =
-        winner === Number(playerNumber);
-
-    matchFinished = true;
-    gameStarted = false;
-    gameLocked = true;
-    gameLockReason = "match_finished";
-
-    replacementActive = false;
-    replacementPlayer = null;
-
-    if (gameStatus) {
-        gameStatus.textContent =
-            iWon
-                ? "VOCÊ VENCEU A PARTIDA!"
-                : "VOCÊ PERDEU A PARTIDA";
-    }
-
-    openMatchFinishedPopup(iWon);
-}
-
-
-function openMatchFinishedPopup(iWon) {
-
-    const finalScore =
-        "J1 — " +
-        matchScore[1] +
-        " × " +
-        matchScore[2] +
-        " — J2";
-
-    openCustomPopup(
-        iWon
-            ? "VOCÊ VENCEU A PARTIDA!"
-            : "VOCÊ PERDEU A PARTIDA",
-        finalScore,
-        [
-            {
-                text: "JOGAR NOVAMENTE",
-                secondary: false,
-                action: function () {
-                    requestPlayAgain();
-                }
-            },
-            {
-                text: "MUDAR VITÓRIAS",
-                secondary: true,
-                action: function () {
-                    requestChangeMatchConfig();
-                }
-            },
-            {
-                text: "SAIR DA PARTIDA",
-                secondary: true,
-                action: function () {
-                    leaveGame();
-                }
-            }
-        ]
-    );
-}
-
-
-// ==========================================
-// JOGAR NOVAMENTE
-// ==========================================
-
-function requestPlayAgain() {
-
-    resetRoundVariables();
-
-    matchFinished = false;
-
-    sendGameMessage({
-        type: "play_again"
-    });
-
-    if (gameStatus) {
-        gameStatus.textContent =
-            "AGUARDANDO NOVA RODADA...";
-    }
-}
-
-
-// ==========================================
-// MUDAR QUANTIDADE DE VITÓRIAS
-// ==========================================
-
-function requestChangeMatchConfig() {
-
-    resetRoundVariables();
-
-    matchFinished = false;
-
-    sendGameMessage({
-        type: "change_match_config"
-    });
-
-    if (typeof openMatchConfig === "function") {
-        openMatchConfig();
-    }
-}
-
-
-// ==========================================
-// RESETAR VARIÁVEIS DA RODADA
-// ==========================================
-
-function resetRoundVariables() {
-
-    gameStarted = false;
-    gameInitialized = false;
-
-    gameLocked = false;
-    gameLockReason = null;
-
-    betSelectionActive = false;
-    betWaitingResult = false;
-    betInProgress = false;
-
-    replacementActive = false;
-    replacementPlayer = null;
-    replacementPreviousCharacter = null;
-    replacementSelectionIndex = null;
-
-    selectedCharacter = null;
-    opponentCharacter = null;
-    characterChoiceConfirmed = false;
-    opponentChoiceConfirmed = false;
-
-    gameCards = [];
-
-    hideWaitingOverlay();
-
-    if (betButton) {
-        betButton.disabled = false;
     }
 }
 
@@ -2456,80 +2135,6 @@ function handleGameMessage(data) {
     }
 
     // ======================================
-    // CONFIGURAÇÃO DA PARTIDA
-    // ======================================
-
-    if (data.type === "match_config") {
-
-        receiveMatchConfig(data);
-        return;
-    }
-
-
-    // ======================================
-    // ATUALIZAÇÃO DO PLACAR
-    // ======================================
-
-    if (data.type === "score_update") {
-
-        receiveScoreUpdate(data);
-        return;
-    }
-
-
-    // ======================================
-    // RODADA VENCIDA
-    // ======================================
-
-    if (data.type === "round_won") {
-
-        handleRoundWon(data);
-        return;
-    }
-
-
-    // ======================================
-    // PARTIDA VENCIDA
-    // ======================================
-
-    if (data.type === "match_won") {
-
-        handleMatchWon(data);
-        return;
-    }
-
-
-    // ======================================
-    // NOVA PARTIDA / NOVA RODADA
-    // ======================================
-
-    if (data.type === "play_again") {
-
-        resetRoundVariables();
-        matchFinished = false;
-
-        if (data.score) {
-            receiveScoreUpdate(data);
-        }
-
-        return;
-    }
-
-
-    if (data.type === "change_match_config") {
-
-        resetRoundVariables();
-        matchFinished = false;
-
-        if (typeof openMatchConfig === "function") {
-            openMatchConfig();
-        }
-
-        return;
-    }
-
-
-    // ======================================
     // TABULEIROS RECEBIDOS
     // ======================================
 
@@ -2669,32 +2274,6 @@ function handleGameMessage(data) {
                 "ENCONTRE O PERSONAGEM DO ADVERSÁRIO!";
         }
 
-        return;
-    }
-
-    // ======================================
-    // IGNORAR EVENTOS DE APOSTA APÓS O FIM
-    // ======================================
-
-    // O servidor pode enviar o resultado da aposta
-    // depois de match_won. Nesse caso, não podemos
-    // abrir outro popup por cima da tela final.
-    if (
-        matchFinished &&
-        (
-            data.type === "bet_started" ||
-            data.type === "bet_lock_denied" ||
-            data.type === "bet_cancelled" ||
-            data.type === "bet_result" ||
-            data.type === "bet_correct" ||
-            data.type === "bet_wrong"
-        )
-    ) {
-        betSelectionActive = false;
-        betWaitingResult = false;
-        betInProgress = false;
-        disableBetSelection();
-        hideWaitingOverlay();
         return;
     }
 

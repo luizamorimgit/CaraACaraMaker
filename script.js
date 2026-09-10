@@ -1358,6 +1358,23 @@ function handleServerMessage(data) {
 
 
     // ======================================
+    // TABULEIROS RECEBIDOS
+    // ======================================
+    // Entrega game_boards diretamente ao jogo.
+    // Não deixa essa mensagem depender do fluxo
+    // das outras mensagens do script.js.
+
+    if (data.type === "game_boards") {
+
+        if (typeof handleGameMessage === "function") {
+            handleGameMessage(data);
+        }
+
+        return;
+    }
+
+
+    // ======================================
     // CONFIGURAÇÃO DA PARTIDA
     // ======================================
 
