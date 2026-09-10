@@ -1455,6 +1455,35 @@ function handleServerMessage(data) {
 
 
     // ======================================
+    // VITÓRIA DE RODADA
+    // ======================================
+
+    if (
+        data.type === "round_won"
+    ) {
+
+        if (data.score) {
+
+            updateMatchScore(
+                data.score[1] ??
+                    data.score["1"] ??
+                    0,
+
+                data.score[2] ??
+                    data.score["2"] ??
+                    0
+            );
+        }
+
+        if (typeof handleGameMessage === "function") {
+            handleGameMessage(data);
+        }
+
+        return;
+    }
+
+
+    // ======================================
     // PARTIDA VENCIDA
     // ======================================
 

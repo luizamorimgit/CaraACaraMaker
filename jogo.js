@@ -195,7 +195,7 @@ function receiveMatchConfig(data) {
 
 
     if (
-        [1, 2, 3, 5, 7].includes(value)
+        [1, 3, 5, 7].includes(value)
     ) {
 
         winsToFinish =
