@@ -1,7 +1,6 @@
 // ==========================================
 // CARA A CARA MAKER
 // FUNCIONAMENTO DO JOGO
-// VERSÃO 3.0
 // ==========================================
 
 
@@ -24,12 +23,36 @@ let gameStarted = false;
 
 let gameInitialized = false;
 
+// ==========================================
+// ESTADO DE BLOQUEIO / APOSTA / TROCA
+// ==========================================
+
+let gameLocked = false;
+let gameLockReason = null;
+
+let betSelectionActive = false;
+let betWaitingResult = false;
+let betInProgress = false;
+
+let replacementActive = false;
+let replacementPlayer = null;
+let replacementPreviousCharacter = null;
+let replacementSelectionIndex = null;
+
+let waitingOverlay = null;
 
 // ==========================================
-// ESTADO DA PARTIDA
+// ESTADO DA PARTIDA / PLACAR
 // ==========================================
 
+let matchScore = {
+    1: 0,
+    2: 0
+};
+
+let winsToFinish = 1;
 let matchFinished = false;
+
 
 
 // ==========================================
@@ -44,11 +67,11 @@ let choiceBoard = null;
 
 let betButton = null;
 let leaveGameButton = null;
+let saveBoardButton = null;
 
 let gameStatus = null;
 let gameRoomCode = null;
 let choiceRoomCode = null;
-
 let matchScoreElement = null;
 
 
@@ -76,6 +99,9 @@ function initializeGameElements() {
     leaveGameButton =
         document.getElementById("leaveGameButton");
 
+    saveBoardButton =
+        document.getElementById("saveBoardButton");
+
     gameStatus =
         document.getElementById("gameStatus");
 
@@ -87,6 +113,11 @@ function initializeGameElements() {
 
     matchScoreElement =
         document.getElementById("matchScore");
+
+    updateMatchScore(
+        matchScore[1],
+        matchScore[2]
+    );
 
 
     // ======================================
@@ -121,7 +152,20 @@ function initializeGameElements() {
     }
 
 
-    updateMatchScore();
+    // ======================================
+    // BOTÃO SALVAR
+    // ======================================
+
+    if (saveBoardButton) {
+
+        saveBoardButton.addEventListener(
+            "click",
+            function () {
+
+                openSaveGamePopup();
+            }
+        );
+    }
 }
 
 
@@ -141,99 +185,74 @@ document.addEventListener(
 // ==========================================
 // ATUALIZAR PLACAR
 // ==========================================
-//
-// O placar é controlado pelo script.js.
-// Esta função apenas garante que o elemento
-// esteja atualizado.
-// ==========================================
 
-function updateGameScoreDisplay() {
+function updateMatchScore(score1, score2) {
 
-    if (!matchScoreElement) {
+    const parsedScore1 = Number(score1);
+    const parsedScore2 = Number(score2);
 
-        matchScoreElement =
-            document.getElementById("matchScore");
+    if (Number.isFinite(parsedScore1)) {
+        matchScore[1] = parsedScore1;
     }
 
-
-    if (!matchScoreElement) {
-        return;
+    if (Number.isFinite(parsedScore2)) {
+        matchScore[2] = parsedScore2;
     }
 
-
-    if (
-        typeof player1Score === "undefined" ||
-        typeof player2Score === "undefined"
-    ) {
-
-        return;
+    if (matchScoreElement) {
+        matchScoreElement.textContent =
+            "J1 — " +
+            matchScore[1] +
+            " × " +
+            matchScore[2] +
+            " — J2";
     }
-
-
-    matchScoreElement.textContent =
-        "J1 — " +
-        player1Score +
-        " × " +
-        player2Score +
-        " — J2";
 }
 
+function receiveMatchConfig(data = {}) {
 
-// ==========================================
-// RECEBER CONFIGURAÇÃO DA PARTIDA
-// ==========================================
-
-function receiveMatchConfig(data) {
-
-    if (!data) {
-        return;
-    }
-
-
-    const value =
+    const configuredWins =
         Number(data.wins_to_finish);
 
-
-    if (
-        [1, 3, 5, 7].includes(value)
-    ) {
-
-        winsToFinish =
-            value;
+    if ([1, 3, 5, 10].includes(configuredWins)) {
+        winsToFinish = configuredWins;
     }
 
-
-    if (
-        data.score &&
-        typeof updateMatchScore === "function"
-    ) {
-
+    if (data.score) {
         updateMatchScore(
             data.score[1] ?? data.score["1"] ?? 0,
             data.score[2] ?? data.score["2"] ?? 0
         );
-
     } else {
-
-        updateGameScoreDisplay();
+        updateMatchScore(0, 0);
     }
 
+    matchFinished = false;
+}
 
-    if (
-        typeof matchConfigMode !== "undefined" &&
-        matchConfigMode === "change"
-    ) {
+function receiveScoreUpdate(data = {}) {
 
-        matchConfigMode = "create";
-        matchConfigController = null;
-        matchConfigConfirmed = true;
-
-        if (typeof hideWaitingOverlay === "function") {
-            hideWaitingOverlay();
-        }
-
-        openCharacterChoice();
+    if (data.score) {
+        updateMatchScore(
+            data.score[1] ?? data.score["1"] ?? 0,
+            data.score[2] ?? data.score["2"] ?? 0
+        );
+        return;
     }
+
+    updateMatchScore(
+        data.player1_score ?? matchScore[1],
+        data.player2_score ?? matchScore[2]
+    );
+}
+
+function resetMatchState() {
+
+    matchScore[1] = 0;
+    matchScore[2] = 0;
+    matchFinished = false;
+
+    updateMatchScore(0, 0);
 }
 
 
@@ -252,6 +271,8 @@ function receiveGameBoards(
     images1,
     images2
 ) {
+
+    matchFinished = false;
 
     if (!Array.isArray(images1)) {
         images1 = [];
@@ -288,7 +309,8 @@ function receiveGameBoards(
                 image: image,
                 owner: 1,
                 originalPosition: index,
-                raised: true
+                raised: true,
+                wrong: false
             });
         }
     );
@@ -305,16 +327,14 @@ function receiveGameBoards(
                 image: image,
                 owner: 2,
                 originalPosition: index,
-                raised: true
+                raised: true,
+                wrong: false
             });
         }
     );
 
 
     shuffleGameCards();
-
-
-    matchFinished = false;
 
 
     openCharacterChoice();
@@ -357,24 +377,25 @@ function shuffleGameCards() {
 
 function openCharacterChoice() {
 
-    if (!characterChoiceScreen) {
-        return;
-    }
+if (!characterChoiceScreen) {
+    return;
+}
 
 
-    if (choiceRoomCode) {
+if (choiceRoomCode) {
 
-        choiceRoomCode.textContent =
-            roomCode || "----";
-    }
-
-
-    renderCharacterChoice();
+    choiceRoomCode.textContent =
+        roomCode || "----";
+}
 
 
-    showScreen(
-        characterChoiceScreen
-    );
+renderCharacterChoice();
+
+
+showScreen(
+    characterChoiceScreen
+);
+
 }
 
 
@@ -386,26 +407,6 @@ function renderCharacterChoice() {
 
     if (!choiceBoard) {
         return;
-    }
-
-
-    characterChoiceConfirmed = false;
-
-    opponentChoiceConfirmed = false;
-
-    selectedCharacter = null;
-
-
-    hideWaitingOverlay();
-
-
-    const choiceStatus =
-        document.getElementById("choiceStatus");
-
-
-    if (choiceStatus) {
-
-        choiceStatus.style.display = "none";
     }
 
 
@@ -421,11 +422,6 @@ function renderCharacterChoice() {
                     index,
                     true
                 );
-
-
-            cardElement.classList.remove(
-                "disabled"
-            );
 
 
             choiceBoard.appendChild(
@@ -452,14 +448,6 @@ function createGameCard(
 
     cardElement.className =
         "game-card";
-
-
-    if (card.wrong) {
-
-        cardElement.classList.add(
-            "wrong-guess"
-        );
-    }
 
 
     cardElement.dataset.index =
@@ -508,7 +496,7 @@ function createGameCard(
 
 
     back.textContent =
-        "";
+        "?";
 
 
     // ======================================
@@ -540,7 +528,6 @@ function createGameCard(
                 );
             }
         );
-
 
         return cardElement;
     }
@@ -664,12 +651,6 @@ function confirmCharacter(image) {
     }
 
 
-    showWaitingOverlay(
-        "AGUARDANDO O ADVERSÁRIO",
-        "Você escolheu seu personagem. Aguarde o outro jogador escolher."
-    );
-
-
     // ======================================
     // AVISAR O SERVIDOR
     // ======================================
@@ -681,109 +662,21 @@ function confirmCharacter(image) {
 
 
     // ======================================
-    // VERIFICAR SE OS DOIS JÁ CONFIRMARAM
+    // DESABILITAR CARTAS
     // ======================================
 
-    if (
-        characterChoiceConfirmed &&
-        opponentChoiceConfirmed
-    ) {
+    document
+        .querySelectorAll(
+            "#choiceBoard .game-card"
+        )
+        .forEach(
+            function (card) {
 
-        startGame();
-    }
-}
-
-
-// ==========================================
-// OVERLAY DE ESPERA
-// ==========================================
-
-function showWaitingOverlay(title, text) {
-
-    const overlay =
-        document.getElementById("waitingOverlay");
-
-
-    if (!overlay) return;
-
-
-    const titleEl =
-        document.getElementById("waitingOverlayTitle");
-
-
-    const textEl =
-        document.getElementById("waitingOverlayText");
-
-
-    if (titleEl && title) {
-
-        titleEl.textContent =
-            title;
-    }
-
-
-    if (textEl && text) {
-
-        textEl.textContent =
-            text;
-    }
-
-
-    document.body.classList.add(
-        "waiting-active"
-    );
-
-
-    overlay.style.display =
-        "flex";
-}
-
-
-function hideWaitingOverlay() {
-
-    document.body.classList.remove(
-        "waiting-active"
-    );
-
-
-    const overlay =
-        document.getElementById("waitingOverlay");
-
-
-    if (overlay) {
-
-        overlay.style.display =
-            "none";
-    }
-}
-
-
-function applyPlayerTheme() {
-
-    const num =
-        String(playerNumber);
-
-
-    if (num === "1") {
-
-        document.body.classList.add(
-            "player-1-theme"
+                card.classList.add(
+                    "disabled"
+                );
+            }
         );
-
-        document.body.classList.remove(
-            "player-2-theme"
-        );
-
-    } else if (num === "2") {
-
-        document.body.classList.add(
-            "player-2-theme"
-        );
-
-        document.body.classList.remove(
-            "player-1-theme"
-        );
-    }
 }
 
 
@@ -792,6 +685,10 @@ function applyPlayerTheme() {
 // ==========================================
 
 function opponentCharacterConfirmed() {
+
+    if (replacementActive) {
+        return;
+    }
 
     opponentChoiceConfirmed =
         true;
@@ -813,17 +710,15 @@ function opponentCharacterConfirmed() {
 
 function startGame() {
 
+    if (matchFinished) {
+        return;
+    }
+
     if (gameStarted) {
         return;
     }
 
 
-    hideWaitingOverlay();
-
-
-    applyPlayerTheme();
-
-
     gameStarted = true;
 
     gameInitialized = true;
@@ -841,65 +736,6 @@ function startGame() {
         gameStatus.textContent =
             "ENCONTRE O PERSONAGEM DO ADVERSÁRIO!";
     }
-
-
-    if (betButton) {
-
-        betButton.disabled =
-            false;
-    }
-
-
-    updateMatchScore();
-
-
-    renderGameBoard();
-
-
-    showScreen(
-        gameScreen
-    );
-}
-
-
-// ==========================================
-// INICIAR NOVA RODADA
-// ==========================================
-
-function startNewRound() {
-
-    hideWaitingOverlay();
-
-
-    gameStarted = true;
-
-    gameInitialized = true;
-
-    matchFinished = false;
-
-
-    if (gameRoomCode) {
-
-        gameRoomCode.textContent =
-            roomCode || "----";
-    }
-
-
-    if (gameStatus) {
-
-        gameStatus.textContent =
-            "ENCONTRE O PERSONAGEM DO ADVERSÁRIO!";
-    }
-
-
-    if (betButton) {
-
-        betButton.disabled =
-            false;
-    }
-
-
-    updateMatchScore();
 
 
     renderGameBoard();
@@ -943,6 +779,17 @@ function renderGameBoard() {
                 );
             }
 
+            if (card.wrong) {
+                element.classList.add(
+                    "wrong-guess"
+                );
+            }
+
+            if (gameLocked) {
+                element.classList.add(
+                    "disabled"
+                );
+            }
 
             gameBoard.appendChild(
                 element
@@ -961,85 +808,32 @@ function toggleGameCard(
     element
 ) {
 
-    if (!gameStarted) {
+    if (!gameStarted || gameLocked) {
         return;
     }
 
-
-    if (matchFinished) {
+    if (betSelectionActive || betWaitingResult) {
         return;
     }
 
-
-    if (betInProgress) {
-        return;
-    }
-
-
-    const card =
-        gameCards[index];
-
+    const card = gameCards[index];
 
     if (!card) {
         return;
     }
 
-
-    card.raised =
-        !card.raised;
-
+    card.raised = !card.raised;
 
     element.classList.toggle(
         "flipped",
         !card.raised
     );
 
-
-    // ======================================
-    // AVISAR SERVIDOR
-    // ======================================
-
     sendGameMessage({
         type: "card_toggle",
         index: index,
         raised: card.raised
     });
-
-
-    // ======================================
-    // VERIFICAR SE SOBROU APENAS 1 CARTA
-    // ======================================
-
-    const standingCards =
-        gameCards.filter(
-            function (c) {
-
-                return c.raised &&
-                       !c.wrong;
-            }
-        );
-
-
-    if (standingCards.length !== 1) {
-
-        betAutoDismissed =
-            false;
-
-    } else if (
-        standingCards.length === 1 &&
-        !card.raised &&
-        !betAutoDismissed
-    ) {
-
-        setTimeout(
-            function () {
-
-                openBetConfirmation();
-
-            },
-            300
-        );
-    }
 }
 
 
@@ -1047,293 +841,218 @@ function toggleGameCard(
 // APOSTA
 // ==========================================
 
-let betAutoDismissed = false;
-let betInProgress = false;
-
-
 function openBetConfirmation() {
 
-    if (!gameStarted) return;
-
-    if (matchFinished) return;
-
-    if (betInProgress) return;
-
-
-    const standingCards =
-        gameCards.filter(
-            function (c) {
-
-                return c.raised &&
-                       !c.wrong;
-            }
-        );
-
-
-    if (standingCards.length === 0) {
-
-        openCustomPopup(
-            "SEM CARTAS EM PÉ",
-            "Não há cartas em pé no seu tabuleiro para apostar.",
-            [
-                {
-                    text: "OK",
-                    secondary: false,
-                    action: function () {}
-                }
-            ]
-        );
-
+    if (
+        !gameStarted ||
+        gameLocked ||
+        replacementActive ||
+        betSelectionActive ||
+        betWaitingResult ||
+        betInProgress
+    ) {
         return;
     }
-
-
-    // ======================================
-    // APOSTA VÁLIDA
-    // ======================================
-
-    betInProgress =
-        true;
-
-
-    sendGameMessage({
-        type: "bet_in_progress"
-    });
-
-
-    // ======================================
-    // CASO 1: APENAS 1 CARTA EM PÉ
-    // ======================================
-
-    if (standingCards.length === 1) {
-
-        const singleCard =
-            standingCards[0];
-
-
-        const singleIndex =
-            gameCards.indexOf(
-                singleCard
-            );
-
-
-        openCustomPopup(
-            "CONFIRMAR APOSTA?",
-            "Deseja apostar nesta única carta restante?",
-            [
-                {
-                    text: "CANCELAR",
-                    secondary: true,
-                    action: function () {
-
-                        betAutoDismissed =
-                            true;
-
-                        betInProgress =
-                            false;
-
-
-                        sendGameMessage({
-                            type: "bet_cancelled"
-                        });
-                    }
-                },
-                {
-                    text: "CONFIRMAR APOSTA",
-                    secondary: false,
-                    action: function () {
-
-                        sendBet(
-                            singleCard,
-                            singleIndex
-                        );
-                    }
-                }
-            ],
-            singleCard.image
-        );
-
-
-        return;
-    }
-
-
-    // ======================================
-    // CASO 2: VÁRIAS CARTAS
-    // ======================================
-
-    let selectedCardInPopup =
-        null;
-
 
     openCustomPopup(
-        "FAÇA SUA APOSTA",
-        "Clique na carta desejada no mini tabuleiro abaixo para selecionar:",
+        "CONFIRMAR APOSTA?",
+        "Tem certeza que quer dar uma aposta agora?",
         [
             {
                 text: "VOLTAR",
                 secondary: true,
-                action: function () {
-
-                    betInProgress =
-                        false;
-
-
-                    sendGameMessage({
-                        type: "bet_cancelled"
-                    });
-                }
+                action: function () {}
             },
             {
-                text: "CONFIRMAR APOSTA",
+                text: "APOSTAR",
                 secondary: false,
                 action: function () {
+                    beginBet();
+                }
+            }
+        ]
+    );
+}
 
-                    if (selectedCardInPopup) {
 
-                        const cardIdx =
-                            gameCards.indexOf(
-                                selectedCardInPopup
-                            );
+// ==========================================
+// PEDIR BLOQUEIO DE APOSTA AO SERVIDOR
+// ==========================================
+
+function requestBetLock() {
+
+    sendGameMessage({
+        type: "bet_lock",
+        action: "start"
+    });
+}
 
 
-                        sendBet(
-                            selectedCardInPopup,
-                            cardIdx
-                        );
-                    }
+function releaseBetLock() {
+
+    sendGameMessage({
+        type: "bet_lock",
+        action: "cancel"
+    });
+}
+
+
+// ==========================================
+// COMEÇAR APOSTA
+// ==========================================
+
+function beginBet() {
+
+    if (
+        !gameStarted ||
+        gameLocked ||
+        replacementActive ||
+        betWaitingResult
+    ) {
+        return;
+    }
+
+    betSelectionActive = true;
+    betInProgress = true;
+
+    // O servidor é quem decide se o bloqueio pode começar.
+    requestBetLock();
+
+    openCustomPopup(
+        "FAÇA SUA APOSTA",
+        "Escolha a carta que você acredita ser o personagem do adversário.",
+        [
+            {
+                text: "CANCELAR",
+                secondary: true,
+                action: function () {
+                    cancelBetSelection();
                 }
             }
         ]
     );
 
-
-    const popupContent =
-        gamePopup.querySelector(
-            ".game-popup"
-        );
+    enableBetSelection();
+}
 
 
-    const popupActions =
-        popupContent.querySelector(
-            ".popup-actions"
-        );
+// ==========================================
+// CANCELAR SELEÇÃO DA APOSTA
+// ==========================================
+
+function cancelBetSelection() {
+
+    disableBetSelection();
+
+    betSelectionActive = false;
+    betWaitingResult = false;
+    betInProgress = false;
+
+    releaseBetLock();
+
+    if (gameStatus && gameStarted) {
+        gameStatus.textContent =
+            "ENCONTRE O PERSONAGEM DO ADVERSÁRIO!";
+    }
+}
 
 
-    const confirmBtn =
-        popupActions.querySelector(
-            ".popup-button:not(.secondary)"
-        );
+// ==========================================
+// ATIVAR SELEÇÃO PARA APOSTA
+// ==========================================
 
+function enableBetSelection() {
 
-    if (confirmBtn) {
-
-        confirmBtn.disabled =
-            true;
-
-        confirmBtn.style.opacity =
-            "0.5";
-
-        confirmBtn.style.cursor =
-            "not-allowed";
+    if (gameLocked || replacementActive) {
+        return;
     }
 
+    betSelectionActive = true;
 
-    const betGrid =
-        document.createElement("div");
+    document
+        .querySelectorAll(
+            "#gameBoard .game-card"
+        )
+        .forEach(
+            function (element) {
 
+                element.classList.add(
+                    "bet-selection"
+                );
 
-    betGrid.className =
-        "bet-popup-grid";
+                element.onclick =
+                    function () {
 
+                        if (
+                            gameLocked ||
+                            !betSelectionActive
+                        ) {
+                            return;
+                        }
 
-    betGrid.style.cssText =
-        "display: grid; grid-template-columns: repeat(auto-fit, minmax(65px, 1fr)); gap: 10px; margin: 15px 0; max-height: 230px; overflow-y: auto; padding: 5px; justify-items: center;";
+                        const index =
+                            Number(
+                                element.dataset.index
+                            );
 
+                        const card =
+                            gameCards[index];
 
-    standingCards.forEach(
-        function (card) {
+                        if (!card) {
+                            return;
+                        }
 
-            const cardImg =
-                document.createElement("img");
-
-
-            cardImg.src =
-                card.image;
-
-
-            cardImg.className =
-                "bet-grid-item";
-
-
-            cardImg.style.cssText =
-                "width: 65px; height: 85px; object-fit: cover; border-radius: 8px; cursor: pointer; border: 3px solid #ddd; transition: all 0.2s;";
-
-
-            cardImg.onclick =
-                function () {
-
-                    betGrid
-                        .querySelectorAll(
-                            ".bet-grid-item"
-                        )
-                        .forEach(
-                            function (el) {
-
-                                el.classList.remove(
-                                    "selected"
-                                );
-
-                                el.style.border =
-                                    "3px solid #ddd";
-
-                                el.style.transform =
-                                    "scale(1)";
-                            }
+                        confirmBet(
+                            card,
+                            element
                         );
+                    };
+            }
+        );
+}
 
 
-                    selectedCardInPopup =
-                        card;
+// ==========================================
+// CONFIRMAR APOSTA
+// ==========================================
 
+function confirmBet(
+    card,
+    element
+) {
 
-                    cardImg.classList.add(
-                        "selected"
-                    );
+    if (
+        gameLocked ||
+        !betSelectionActive ||
+        !card
+    ) {
+        return;
+    }
 
+    disableBetSelection();
+    betSelectionActive = false;
 
-                    cardImg.style.border =
-                        "4px solid #3b82f6";
-
-
-                    cardImg.style.transform =
-                        "scale(1.1)";
-
-
-                    if (confirmBtn) {
-
-                        confirmBtn.disabled =
-                            false;
-
-                        confirmBtn.style.opacity =
-                            "1";
-
-                        confirmBtn.style.cursor =
-                            "pointer";
-                    }
-                };
-
-
-            betGrid.appendChild(
-                cardImg
-            );
-        }
-    );
-
-
-    popupContent.insertBefore(
-        betGrid,
-        popupActions
+    openCustomPopup(
+        "CONFIRMAR APOSTA?",
+        "Você realmente quer apostar neste personagem?",
+        [
+            {
+                text: "VOLTAR",
+                secondary: true,
+                action: function () {
+                    betSelectionActive = true;
+                    enableBetSelection();
+                }
+            },
+            {
+                text: "APOSTAR",
+                secondary: false,
+                action: function () {
+                    sendBet(card);
+                }
+            }
+        ],
+        card.image
     );
 }
 
@@ -1342,39 +1061,29 @@ function openBetConfirmation() {
 // ENVIAR APOSTA
 // ==========================================
 
-function sendBet(card, optionalIndex = null) {
+function sendBet(card) {
 
-    if (!card) {
+    if (
+        !card ||
+        gameLocked ||
+        replacementActive
+    ) {
         return;
     }
 
+    disableBetSelection();
 
-    const cardIndex =
-        optionalIndex !== null
-            ? optionalIndex
-            : gameCards.indexOf(card);
-
-
-    if (cardIndex === -1) {
-        return;
-    }
-
-
-    showWaitingOverlay(
-        "APOSTA ENVIADA",
-        "Aguardando o adversário revelar se você acertou..."
-    );
-
+    betSelectionActive = false;
+    betWaitingResult = true;
+    betInProgress = true;
 
     sendGameMessage({
         type: "make_bet",
-        card_image: card.image,
-        card_index: cardIndex
+        card_index: gameCards.indexOf(card),
+        card_image: card.image
     });
 
-
     if (gameStatus) {
-
         gameStatus.textContent =
             "AGUARDANDO RESULTADO...";
     }
@@ -1398,36 +1107,233 @@ function disableBetSelection() {
                     "bet-selection"
                 );
 
-
-                element.onclick =
-                    null;
+                element.onclick = null;
             }
         );
 
+    if (gameStarted) {
+        document
+            .querySelectorAll(
+                "#gameBoard .game-card"
+            )
+            .forEach(
+                function (element) {
 
-    document
-        .querySelectorAll(
-            "#gameBoard .game-card"
-        )
-        .forEach(
-            function (element) {
-
-                const index =
-                    Number(
-                        element.dataset.index
-                    );
-
-
-                element.onclick =
-                    function () {
-
-                        toggleGameCard(
-                            index,
-                            element
+                    const index =
+                        Number(
+                            element.dataset.index
                         );
-                    };
-            }
+
+                    element.onclick =
+                        function () {
+                            toggleGameCard(
+                                index,
+                                element
+                            );
+                        };
+                }
+            );
+    }
+}
+
+
+// ==========================================
+// BLOQUEAR / DESBLOQUEAR TABULEIRO
+// ==========================================
+
+function setGameLock(
+    locked,
+    reason = null,
+    showOverlay = false,
+    title = "AGUARDE",
+    message = "O outro jogador está realizando uma ação."
+) {
+
+    gameLocked = locked;
+    gameLockReason = reason;
+
+    if (locked) {
+        disableBetSelection();
+
+        if (betButton) {
+            betButton.disabled = true;
+        }
+
+        if (showOverlay) {
+            showWaitingOverlay(
+                title,
+                message
+            );
+        }
+
+        return;
+    }
+
+    if (!replacementActive && !betSelectionActive && !betWaitingResult) {
+        if (betButton && gameStarted) {
+            betButton.disabled = false;
+        }
+
+        hideWaitingOverlay();
+        disableBetSelection();
+    }
+}
+
+
+// ==========================================
+// OVERLAY DE ESPERA
+// ==========================================
+
+function showWaitingOverlay(
+    title,
+    message
+) {
+
+    if (!waitingOverlay) {
+        waitingOverlay =
+            document.createElement("div");
+
+        waitingOverlay.className =
+            "waiting-overlay";
+
+        waitingOverlay.innerHTML =
+            '<div class="waiting-box">' +
+                '<div class="spinner">⏳</div>' +
+                '<h2></h2>' +
+                '<p></p>' +
+            '</div>';
+
+        document.body.appendChild(
+            waitingOverlay
         );
+    }
+
+    const box =
+        waitingOverlay.querySelector(
+            ".waiting-box"
+        );
+
+    if (box) {
+        const heading =
+            box.querySelector("h2");
+
+        const text =
+            box.querySelector("p");
+
+        if (heading) {
+            heading.textContent = title;
+        }
+
+        if (text) {
+            text.textContent = message;
+        }
+    }
+
+    waitingOverlay.style.display = "flex";
+    document.body.classList.add(
+        "waiting-active"
+    );
+}
+
+
+function hideWaitingOverlay() {
+
+    if (waitingOverlay) {
+        waitingOverlay.style.display =
+            "none";
+    }
+
+    document.body.classList.remove(
+        "waiting-active"
+    );
+}
+
+
+// ==========================================
+// APOSTA CORRETA
+// ==========================================
+
+function handleCorrectBet(data = {}) {
+
+    const bettor =
+        Number(data.bettor);
+
+    const iWon =
+        !bettor || bettor === Number(playerNumber);
+
+    if (gameStatus) {
+        gameStatus.textContent =
+            iWon
+                ? "VOCÊ ACERTOU!"
+                : "O OUTRO JOGADOR ACERTOU.";
+    }
+
+    if (iWon) {
+        openCustomPopup(
+            "VOCÊ ACERTOU!",
+            "Você encontrou o personagem do adversário!",
+            [
+                {
+                    text: "CONTINUAR",
+                    secondary: false,
+                    action: function () {
+                        if (replacementActive) {
+                            showReplacementWaitingIfNeeded();
+                        }
+                    }
+                }
+            ]
+        );
+    } else {
+        openCustomPopup(
+            "VOCÊ PERDEU!",
+            "O outro jogador encontrou seu personagem. Você precisará escolher um novo personagem para continuar.",
+            [
+                {
+                    text: "ESCOLHER OUTRO PERSONAGEM",
+                    secondary: false,
+                    action: function () {
+                        startCharacterReplacement();
+                    }
+                }
+            ],
+            selectedCharacter
+                ? selectedCharacter.image
+                : null
+        );
+    }
+}
+
+
+// ==========================================
+// APOSTA ERRADA
+// ==========================================
+
+function handleWrongBet(data = {}) {
+
+    betWaitingResult = false;
+    betInProgress = false;
+
+    openCustomPopup(
+        "VOCÊ ERROU!",
+        "Você não encontrou o personagem do adversário.",
+        [
+            {
+                text: "REVELAR PERSONAGEM",
+                secondary: false,
+                action: function () {
+                    revealOpponentCharacter();
+                }
+            },
+            {
+                text: "CONTINUAR",
+                secondary: true,
+                action: function () {
+                    resetMyBoard();
+                }
+            }
+        ]
+    );
 }
 
 
@@ -1447,7 +1353,6 @@ function revealOpponentCharacter() {
                     text: "CONTINUAR",
                     secondary: false,
                     action: function () {
-
                         resetMyBoard();
                     }
                 }
@@ -1457,7 +1362,6 @@ function revealOpponentCharacter() {
         return;
     }
 
-
     openCustomPopup(
         "O PERSONAGEM ERA:",
         "Este era o personagem escolhido pelo outro jogador.",
@@ -1466,7 +1370,6 @@ function revealOpponentCharacter() {
                 text: "CONTINUAR",
                 secondary: false,
                 action: function () {
-
                     resetMyBoard();
                 }
             }
@@ -1484,22 +1387,17 @@ function resetMyBoard() {
 
     gameCards.forEach(
         function (card) {
-
-            card.raised =
-                true;
+            card.raised = true;
+            card.wrong = false;
         }
     );
 
-
     renderGameBoard();
 
-
     if (gameStatus) {
-
         gameStatus.textContent =
             "A PARTIDA CONTINUA. FAÇA SUAS DEDUÇÕES.";
     }
-
 
     sendGameMessage({
         type: "reset_board"
@@ -1508,183 +1406,493 @@ function resetMyBoard() {
 
 
 // ==========================================
-// RESET PARA NOVA RODADA
+// INICIAR TROCA DE PERSONAGEM
 // ==========================================
 
-function resetForNewRound() {
+function startCharacterReplacement() {
 
-    gameCards.forEach(
-        function (card) {
+    if (
+        !replacementActive ||
+        Number(replacementPlayer) !== Number(playerNumber)
+    ) {
+        return;
+    }
 
-            card.raised =
-                true;
+    if (selectedCharacter) {
+        replacementPreviousCharacter =
+            selectedCharacter.image;
+    }
 
-            card.wrong =
-                false;
-        }
+    selectedCharacter = null;
+    characterChoiceConfirmed = false;
+    replacementSelectionIndex = null;
+
+    resetMatchState();
+
+    hideWaitingOverlay();
+
+    openCharacterReplacementPopup();
+}
+
+
+// ==========================================
+// POPUP DE ESCOLHA DO NOVO PERSONAGEM
+// ==========================================
+
+function openCharacterReplacementPopup() {
+
+    if (!replacementActive) {
+        return;
+    }
+
+    if (
+        Number(replacementPlayer) !==
+        Number(playerNumber)
+    ) {
+        return;
+    }
+
+    openCustomPopup(
+        "ESCOLHA OUTRO PERSONAGEM",
+        "Escolha um dos 12 personagens para ser seu novo personagem secreto.",
+        []
     );
 
+    const popupContent =
+        gamePopup
+            ? gamePopup.querySelector(".game-popup")
+            : null;
 
-    renderGameBoard();
+    if (!popupContent) {
+        return;
+    }
+
+    const popupBoard =
+        popupContent.querySelector(".popup-board");
+
+    if (!popupBoard) {
+        console.error(
+            "O HTML precisa conter .popup-board para a troca de personagem."
+        );
+        return;
+    }
+
+    popupBoard.innerHTML = "";
+    popupBoard.style.display = "grid";
+
+    gameCards.forEach(
+        function (card, index) {
+
+            if (
+                replacementPreviousCharacter &&
+                card.image === replacementPreviousCharacter
+            ) {
+                return;
+            }
+
+            const slot =
+                document.createElement("div");
+
+            slot.className =
+                "popup-slot";
+
+            slot.dataset.index =
+                index;
+
+            slot.style.cursor =
+                "pointer";
+
+            const image =
+                document.createElement("img");
+
+            image.src = card.image;
+            image.alt = "Personagem";
+
+            slot.appendChild(image);
+
+            slot.addEventListener(
+                "click",
+                function () {
+
+                    if (
+                        !replacementActive ||
+                        Number(replacementPlayer) !== Number(playerNumber)
+                    ) {
+                        return;
+                    }
+
+                    replacementSelectionIndex = index;
+                    openReplacementConfirmation(
+                        index
+                    );
+                }
+            );
+
+            popupBoard.appendChild(slot);
+        }
+    );
 }
 
 
 // ==========================================
-// VITÓRIA DA RODADA
+// CONFIRMAR NOVO PERSONAGEM
 // ==========================================
 
-function handleRoundWon(data) {
+function openReplacementConfirmation(index) {
 
-    if (!data) {
+    const card =
+        gameCards[index];
+
+    if (!card) {
         return;
     }
-
 
     if (
-        data.score &&
-        typeof updateMatchScore === "function"
+        replacementPreviousCharacter &&
+        card.image === replacementPreviousCharacter
     ) {
-
-        updateMatchScore(
-            data.score[1] ?? data.score["1"] ?? 0,
-            data.score[2] ?? data.score["2"] ?? 0
-        );
-    }
-
-
-    const winner =
-        Number(data.winner);
-
-
-    if (winner === playerNumber) {
-
-        if (gameStatus) {
-
-            gameStatus.textContent =
-                "VOCÊ VENCEU A RODADA!";
-        }
-
-    } else {
-
-        if (gameStatus) {
-
-            gameStatus.textContent =
-                "O ADVERSÁRIO VENCEU A RODADA.";
-        }
-    }
-}
-
-
-// ==========================================
-// ATUALIZAÇÃO DO PLACAR
-// ==========================================
-
-function handleScoreUpdate(data) {
-
-    if (!data || !data.score) {
         return;
     }
 
-
-    if (
-        typeof updateMatchScore === "function"
-    ) {
-
-        updateMatchScore(
-            data.score[1] ?? data.score["1"] ?? 0,
-            data.score[2] ?? data.score["2"] ?? 0
-        );
-
-    } else {
-
-        updateGameScoreDisplay();
-    }
+    openCustomPopup(
+        "CONFIRMAR PERSONAGEM?",
+        "Este será seu novo personagem secreto.",
+        [
+            {
+                text: "VOLTAR",
+                secondary: true,
+                action: function () {
+                    openCharacterReplacementPopup();
+                }
+            },
+            {
+                text: "CONFIRMAR",
+                secondary: false,
+                action: function () {
+                    confirmCharacterReplacement(
+                        index,
+                        card.image
+                    );
+                }
+            }
+        ],
+        card.image
+    );
 }
 
 
-// ==========================================
-// FINAL DA PARTIDA
-// ==========================================
-
-function handleMatchWon(data) {
-
-    if (!data) {
-        return;
-    }
-
-
-    matchFinished = true;
-
-    const winner =
-        Number(data.winner);
-
-
-    if (betButton) {
-
-        betButton.disabled =
-            true;
-    }
-
-
-    if (winner === playerNumber) {
-
-        if (gameStatus) {
-
-            gameStatus.textContent =
-                "VOCÊ VENCEU A PARTIDA!";
-        }
-
-        openMatchFinishedPopup(
-            "VOCÊ VENCEU!",
-            "Parabéns!\nVocê venceu a partida.",
-            Number(playerNumber) === 1
-        );
-
-    } else {
-
-        if (gameStatus) {
-
-            gameStatus.textContent =
-                "O ADVERSÁRIO VENCEU A PARTIDA.";
-        }
-
-        openMatchFinishedPopup(
-            "VOCÊ PERDEU",
-            "O adversário venceu a partida.",
-            Number(playerNumber) === 1
-        );
-    }
-}
-
-
-// ==========================================
-// POPUP DE PARTIDA ENCERRADA
-// ==========================================
-
-function openMatchFinishedPopup(
-    title,
-    message,
-    creatorControls = false
+function confirmCharacterReplacement(
+    index,
+    image
 ) {
 
-    const finalMessage =
-        message +
-        "\nPlacar final: " +
-        player1Score +
+    if (
+        !replacementActive ||
+        Number(replacementPlayer) !== Number(playerNumber)
+    ) {
+        return;
+    }
+
+    if (
+        !image ||
+        !gameCards[index] ||
+        gameCards[index].image !== image
+    ) {
+        return;
+    }
+
+    if (
+        replacementPreviousCharacter &&
+        image === replacementPreviousCharacter
+    ) {
+        return;
+    }
+
+    characterChoiceConfirmed = true;
+    selectedCharacter = gameCards[index];
+
+    if (gameStatus) {
+        gameStatus.textContent =
+            "NOVO PERSONAGEM CONFIRMADO. AGUARDANDO...";
+    }
+
+    sendGameMessage({
+        type: "character_replacement_selected",
+        image: image
+    });
+
+    // A seleção já foi enviada. O servidor libera a partida
+    // somente depois de validar a troca.
+    setGameLock(
+        true,
+        "replacement",
+        false
+    );
+}
+
+
+// ==========================================
+// INÍCIO DA TROCA RECEBIDO DO SERVIDOR
+// ==========================================
+
+function handleCharacterReplacementStarted(data) {
+
+    replacementActive = true;
+    replacementPlayer =
+        Number(data.loser);
+
+    replacementPreviousCharacter =
+        data.previous_character ||
+        (
+            Number(replacementPlayer) === Number(playerNumber) &&
+            selectedCharacter
+                ? selectedCharacter.image
+                : null
+        );
+
+    gameStarted = false;
+    characterChoiceConfirmed =
+        Number(replacementPlayer) !== Number(playerNumber);
+
+    betSelectionActive = false;
+    betWaitingResult = false;
+    betInProgress = false;
+
+    disableBetSelection();
+
+    if (betButton) {
+        betButton.disabled = true;
+    }
+
+    if (
+        Number(replacementPlayer) ===
+        Number(playerNumber)
+    ) {
+        setGameLock(
+            true,
+            "replacement",
+            false
+        );
+
+        openCustomPopup(
+            "VOCÊ PRECISA ESCOLHER OUTRO",
+            "Seu personagem foi descoberto. Escolha um novo personagem para continuar.",
+            [
+                {
+                    text: "ESCOLHER OUTRO PERSONAGEM",
+                    secondary: false,
+                    action: function () {
+                        startCharacterReplacement();
+                    }
+                }
+            ]
+        );
+
+        return;
+    }
+
+    // O popup de vitória continua clicável.
+    // O overlay só aparece depois que o vencedor toca em CONTINUAR.
+    setGameLock(
+        true,
+        "replacement",
+        false
+    );
+}
+
+
+// ==========================================
+// TROCA CONCLUÍDA
+// ==========================================
+
+function handleCharacterReplacementComplete(data) {
+
+    const replacedPlayer =
+        Number(data.player);
+
+    const winner =
+        Number(data.winner);
+
+    if (!data.image) {
+        return;
+    }
+
+    replacementActive = false;
+    replacementPlayer = null;
+    replacementSelectionIndex = null;
+
+    if (
+        replacedPlayer === Number(playerNumber)
+    ) {
+        selectedCharacter =
+            gameCards.find(
+                function (card) {
+                    return card.image === data.image;
+                }
+            ) || null;
+
+        characterChoiceConfirmed = true;
+    } else {
+        opponentCharacter =
+            data.image;
+    }
+
+    // Somente o vencedor limpa o próprio tabuleiro.
+    // O perdedor mantém exatamente os X/cartas que já tinha.
+    if (
+        winner === Number(playerNumber)
+    ) {
+        gameCards.forEach(
+            function (card) {
+                card.raised = true;
+                card.wrong = false;
+            }
+        );
+    }
+
+    gameStarted = true;
+    gameInitialized = true;
+    gameLocked = false;
+    gameLockReason = null;
+
+    betSelectionActive = false;
+    betWaitingResult = false;
+    betInProgress = false;
+
+    replacementPreviousCharacter = null;
+
+    hideWaitingOverlay();
+    closePopup();
+
+    if (betButton) {
+        betButton.disabled = false;
+    }
+
+    if (gameStatus) {
+        gameStatus.textContent =
+            "A PARTIDA CONTINUA. FAÇA SUAS DEDUÇÕES.";
+    }
+
+    renderGameBoard();
+    showGameScreen();
+}
+
+
+// ==========================================
+// MOSTRAR ESPERA APÓS POPUP DO VENCEDOR
+// ==========================================
+
+function showReplacementWaitingIfNeeded() {
+
+    if (
+        replacementActive &&
+        Number(replacementPlayer) !== Number(playerNumber)
+    ) {
+        showWaitingOverlay(
+            "AGUARDE O OUTRO JOGADOR",
+            "O outro jogador está escolhendo um novo personagem."
+        );
+    }
+}
+
+
+// ==========================================
+// RODADA VENCIDA
+// ==========================================
+
+function handleRoundWon(data = {}) {
+
+    receiveScoreUpdate(data);
+
+    betSelectionActive = false;
+    betWaitingResult = false;
+    betInProgress = false;
+
+    setGameLock(
+        true,
+        "round",
+        false
+    );
+
+    if (gameStatus) {
+        const winner = Number(data.winner);
+
+        gameStatus.textContent =
+            winner === Number(playerNumber)
+                ? "VOCÊ VENCEU A RODADA!"
+                : "O OUTRO JOGADOR VENCEU A RODADA.";
+    }
+}
+
+
+// ==========================================
+// PARTIDA VENCIDA
+// ==========================================
+
+function closeBetUI() {
+
+    betSelectionActive = false;
+    betWaitingResult = false;
+    betInProgress = false;
+
+    disableBetSelection();
+    hideWaitingOverlay();
+    closePopup();
+
+    if (betButton) {
+        betButton.disabled = true;
+    }
+}
+
+
+function handleMatchWon(data = {}) {
+
+    closeBetUI();
+
+    receiveScoreUpdate(data);
+
+    const winner = Number(data.winner);
+    const iWon =
+        winner === Number(playerNumber);
+
+    matchFinished = true;
+    gameStarted = false;
+    gameLocked = true;
+    gameLockReason = "match_finished";
+
+    replacementActive = false;
+    replacementPlayer = null;
+
+    if (gameStatus) {
+        gameStatus.textContent =
+            iWon
+                ? "VOCÊ VENCEU A PARTIDA!"
+                : "VOCÊ PERDEU A PARTIDA";
+    }
+
+    openMatchFinishedPopup(iWon);
+}
+
+
+function openMatchFinishedPopup(iWon) {
+
+    const finalScore =
+        "J1 — " +
+        matchScore[1] +
         " × " +
-        player2Score +
-        ".";
+        matchScore[2] +
+        " — J2";
 
-    const buttons = [];
-
-    if (creatorControls) {
-
-        buttons.push(
+    openCustomPopup(
+        iWon
+            ? "VOCÊ VENCEU A PARTIDA!"
+            : "VOCÊ PERDEU A PARTIDA",
+        finalScore,
+        [
             {
                 text: "JOGAR NOVAMENTE",
                 secondary: false,
                 action: function () {
-
                     requestPlayAgain();
                 }
             },
@@ -1692,7 +1900,6 @@ function openMatchFinishedPopup(
                 text: "MUDAR VITÓRIAS",
                 secondary: true,
                 action: function () {
-
                     requestChangeMatchConfig();
                 }
             },
@@ -1700,26 +1907,10 @@ function openMatchFinishedPopup(
                 text: "SAIR DA PARTIDA",
                 secondary: true,
                 action: function () {
-
                     leaveGame();
                 }
             }
-        );
-
-    } else {
-
-        buttons.push({
-            text: "AGUARDANDO O CRIADOR...",
-            secondary: true,
-            action: function () {}
-        });
-    }
-
-
-    openCustomPopup(
-        title,
-        finalMessage,
-        buttons
+        ]
     );
 }
 
@@ -1730,41 +1921,87 @@ function openMatchFinishedPopup(
 
 function requestPlayAgain() {
 
-    if (Number(playerNumber) !== 1) {
-        return;
-    }
+    resetRoundVariables();
+
+    matchFinished = false;
 
     sendGameMessage({
         type: "play_again"
     });
 
-
-    showWaitingOverlay(
-        "AGUARDANDO",
-        "Aguardando o outro jogador..."
-    );
+    if (gameStatus) {
+        gameStatus.textContent =
+            "AGUARDANDO NOVA RODADA...";
+    }
 }
 
 
 // ==========================================
-// MUDAR VITÓRIAS
+// MUDAR QUANTIDADE DE VITÓRIAS
 // ==========================================
 
 function requestChangeMatchConfig() {
 
-    if (Number(playerNumber) !== 1) {
-        return;
-    }
+    resetRoundVariables();
+
+    matchFinished = false;
 
     sendGameMessage({
         type: "change_match_config"
     });
 
+    if (typeof openMatchConfig === "function") {
+        openMatchConfig();
+    }
+}
 
-    showWaitingOverlay(
-        "CONFIGURAÇÃO",
-        "Abrindo a configuração da próxima partida..."
-    );
+
+// ==========================================
+// RESETAR VARIÁVEIS DA RODADA
+// ==========================================
+
+function resetRoundVariables() {
+
+    gameStarted = false;
+    gameInitialized = false;
+
+    gameLocked = false;
+    gameLockReason = null;
+
+    betSelectionActive = false;
+    betWaitingResult = false;
+    betInProgress = false;
+
+    replacementActive = false;
+    replacementPlayer = null;
+    replacementPreviousCharacter = null;
+    replacementSelectionIndex = null;
+
+    selectedCharacter = null;
+    opponentCharacter = null;
+    characterChoiceConfirmed = false;
+    opponentChoiceConfirmed = false;
+
+    gameCards = [];
+
+    hideWaitingOverlay();
+
+    if (betButton) {
+        betButton.disabled = false;
+    }
+}
+
+
+// ==========================================
+// FINALIZAR / MANTER PARTIDA
+// ==========================================
+
+function finishGame() {
+
+    if (gameStatus) {
+        gameStatus.textContent =
+            "A PARTIDA CONTINUA.";
+    }
 }
 
 
@@ -1807,113 +2044,132 @@ function leaveGame() {
     });
 
 
-    resetAllGameVariables();
+    gameStarted = false;
 
-
-    if (typeof backToRoomChoice === "function") {
-
-        backToRoomChoice();
-
-    } else {
-
-        showScreen(
-            lobby
-        );
-    }
-}
-
-
-// ==========================================
-// RESETAR TODAS AS VARIÁVEIS DO JOGO
-// ==========================================
-
-function resetAllGameVariables() {
+    gameInitialized = false;
 
     gameCards = [];
-
-    myBoardImages = [];
-
-    opponentBoardImages = [];
 
     selectedCharacter = null;
 
     opponentCharacter = null;
 
-    characterChoiceConfirmed =
-        false;
-
-    opponentChoiceConfirmed =
-        false;
-
-    gameStarted =
-        false;
-
-    gameInitialized =
-        false;
-
-    betAutoDismissed =
-        false;
-
-    betInProgress =
-        false;
-
-    matchFinished =
-        false;
-
-
-    if (
-        typeof resetMatchScore ===
-        "function"
-    ) {
-
-        resetMatchScore();
-
-    } else {
-
-        updateGameScoreDisplay();
-    }
-
-
-    if (
-        typeof winsToFinish !==
-        "undefined"
-    ) {
-
-        winsToFinish =
-            1;
-    }
-
-
-    document.body.classList.remove(
-        "player-1-theme",
-        "player-2-theme"
-    );
-
+    gameLocked = false;
+    gameLockReason = null;
+    betSelectionActive = false;
+    betWaitingResult = false;
+    betInProgress = false;
+    replacementActive = false;
+    replacementPlayer = null;
+    replacementPreviousCharacter = null;
+    replacementSelectionIndex = null;
 
     hideWaitingOverlay();
 
 
-    const choiceStatus =
-        document.getElementById(
-            "choiceStatus"
-        );
+    if (socket) {
 
-
-    if (choiceStatus) {
-
-        choiceStatus.style.display =
-            "none";
+        try {
+            socket.close();
+        } catch (error) {}
     }
+
+
+    socket = null;
+
+    roomCode = "";
+
+    playerNumber = null;
+
+
+    showScreen(
+        lobby
+    );
+}
+
+
+// ==========================================
+// SALVAR PARTIDA
+// ==========================================
+
+function openSaveGamePopup() {
+
+    openCustomPopup(
+        "SALVAR TABULEIRO?",
+        "Sua partida poderá ser retomada posteriormente.",
+        [
+            {
+                text: "VOLTAR",
+                secondary: true,
+                action: function () {}
+            },
+            {
+                text: "SALVAR",
+                secondary: false,
+                action: function () {
+
+                    saveGame();
+                }
+            }
+        ]
+    );
+}
+
+
+// ==========================================
+// SALVAR
+// ==========================================
+
+function saveGame() {
+
+    sendGameMessage({
+        type: "save_game"
+    });
+
+
+    // ======================================
+    // PEDIR AO SERVIDOR O CÓDIGO
+    // ======================================
+
+    openCustomPopup(
+        "PARTIDA SALVA",
+        "O servidor irá gerar o código de recuperação.",
+        [
+            {
+                text: "OK",
+                secondary: false,
+                action: function () {}
+            }
+        ]
+    );
+}
+
+
+// ==========================================
+// RECEBER CÓDIGO DE SALVAMENTO
+// ==========================================
+
+function receiveSavedGameCode(code) {
+
+    openCustomPopup(
+        "PARTIDA SALVA",
+        "Use este código para continuar sua partida:",
+        [
+            {
+                text: "OK",
+                secondary: false,
+                action: function () {}
+            }
+        ],
+        null,
+        false,
+        code
+    );
 }
 
 
 // ==========================================
 // ENVIAR MENSAGEM PELO WEBSOCKET
-// ==========================================
-//
-// IMPORTANTE:
-// Não cria outro WebSocket.
-// Usa o socket global do script.js.
 // ==========================================
 
 function sendGameMessage(message) {
@@ -1950,6 +2206,9 @@ function sendGameMessage(message) {
 // ==========================================
 // POPUP ESPECIAL DO JOGO
 // ==========================================
+//
+// Reutiliza o popup que já existe no HTML.
+// ==========================================
 
 function openCustomPopup(
     title,
@@ -1964,12 +2223,8 @@ function openCustomPopup(
         return;
     }
 
-
     const popupContent =
-        gamePopup.querySelector(
-            ".game-popup"
-        );
-
+        gamePopup.querySelector(".game-popup");
 
     if (!popupContent) {
         return;
@@ -1977,66 +2232,15 @@ function openCustomPopup(
 
 
     const popupTitle =
-        popupContent.querySelector(
-            "h2"
-        );
+        popupContent.querySelector("h2");
 
 
     const popupMessage =
-        popupContent.querySelector(
-            "p"
-        );
+        popupContent.querySelector("p");
 
 
     const popupActions =
-        popupContent.querySelector(
-            ".popup-actions"
-        );
-
-
-    // ======================================
-    // OCULTAR TABULEIRO DO POPUP
-    // ======================================
-
-    const popupBoard =
-        popupContent.querySelector(
-            "#popupBoard"
-        );
-
-
-    if (popupBoard) {
-
-        popupBoard.style.display =
-            "none";
-    }
-
-
-    // ======================================
-    // REMOVER ELEMENTOS ANTERIORES
-    // ======================================
-
-    const existingBetGrid =
-        popupContent.querySelector(
-            ".bet-popup-grid"
-        );
-
-
-    if (existingBetGrid) {
-
-        existingBetGrid.remove();
-    }
-
-
-    const existingInput =
-        popupContent.querySelector(
-            "#restoreCodeInput"
-        );
-
-
-    if (existingInput) {
-
-        existingInput.remove();
-    }
+        popupContent.querySelector(".popup-actions");
 
 
     if (
@@ -2044,7 +2248,6 @@ function openCustomPopup(
         !popupMessage ||
         !popupActions
     ) {
-
         return;
     }
 
@@ -2056,20 +2259,25 @@ function openCustomPopup(
     popupMessage.textContent =
         message;
 
-    // Permite que mensagens do popup usem quebras de linha.
-    popupMessage.style.whiteSpace =
-        "pre-line";
-
 
     popupActions.innerHTML =
         "";
+
+    // O quadro interno do popup é usado pela troca de personagem.
+    const existingPopupBoard =
+        popupContent.querySelector(".popup-board");
+
+    if (existingPopupBoard) {
+        existingPopupBoard.innerHTML = "";
+        existingPopupBoard.style.display = "none";
+    }
 
 
     // ======================================
     // IMAGEM
     // ======================================
 
-    let existingImage =
+    const existingImage =
         popupContent.querySelector(
             ".popup-character-image"
         );
@@ -2078,22 +2286,6 @@ function openCustomPopup(
     if (existingImage) {
 
         existingImage.remove();
-    }
-
-
-    // ======================================
-    // CÓDIGO SALVO
-    // ======================================
-
-    let existingCode =
-        popupContent.querySelector(
-            ".saved-game-code"
-        );
-
-
-    if (existingCode) {
-
-        existingCode.remove();
     }
 
 
@@ -2125,6 +2317,18 @@ function openCustomPopup(
     // ======================================
     // TEXTO EXTRA
     // ======================================
+
+    const existingCode =
+        popupContent.querySelector(
+            ".saved-game-code"
+        );
+
+
+    if (existingCode) {
+
+        existingCode.remove();
+    }
+
 
     if (extraText) {
 
@@ -2212,6 +2416,9 @@ function openCustomPopup(
 // ==========================================
 // RECEBER MENSAGENS DO SERVIDOR
 // ==========================================
+//
+// Esta função será chamada pelo script.js.
+// ==========================================
 
 function handleGameMessage(data) {
 
@@ -2219,213 +2426,75 @@ function handleGameMessage(data) {
         return;
     }
 
-
     // ======================================
     // CONFIGURAÇÃO DA PARTIDA
     // ======================================
 
-    if (
-        data.type ===
-        "match_config"
-    ) {
+    if (data.type === "match_config") {
 
-        receiveMatchConfig(
-            data
-        );
-
-
+        receiveMatchConfig(data);
         return;
     }
 
 
     // ======================================
-    // PLACAR
+    // ATUALIZAÇÃO DO PLACAR
     // ======================================
 
-    if (
-        data.type ===
-        "score_update"
-    ) {
+    if (data.type === "score_update") {
 
-        handleScoreUpdate(
-            data
-        );
-
-
+        receiveScoreUpdate(data);
         return;
     }
 
 
     // ======================================
-    // VITÓRIA DE RODADA
+    // RODADA VENCIDA
     // ======================================
 
-    if (
-        data.type ===
-        "round_won"
-    ) {
+    if (data.type === "round_won") {
 
-        handleRoundWon(
-            data
-        );
-
-
+        handleRoundWon(data);
         return;
     }
 
 
     // ======================================
-    // VITÓRIA DA PARTIDA
+    // PARTIDA VENCIDA
     // ======================================
 
-    if (
-        data.type ===
-        "match_won"
-    ) {
+    if (data.type === "match_won") {
 
-        handleMatchWon(
-            data
-        );
-
-
+        handleMatchWon(data);
         return;
     }
 
 
     // ======================================
-    // NOVA PARTIDA
+    // NOVA PARTIDA / NOVA RODADA
     // ======================================
 
-    if (
-        data.type ===
-        "play_again"
-    ) {
+    if (data.type === "play_again") {
 
-        if (
-            typeof resetMatchScore ===
-            "function"
-        ) {
-
-            resetMatchScore();
-
-        } else {
-
-            updateGameScoreDisplay();
-        }
-
-
-        matchFinished =
-            false;
-
-
-        gameStarted =
-            false;
-
-
-        gameInitialized =
-            false;
-
-
-        betInProgress =
-            false;
-
-
-        resetForNewRound();
-
-
-        hideWaitingOverlay();
-
-
-        openCharacterChoice();
-
-
-        return;
-    }
-
-
-    // ======================================
-    // MUDAR CONFIGURAÇÃO
-    // ======================================
-
-    if (
-        data.type ===
-        "change_match_config"
-    ) {
-
-        if (
-            typeof resetMatchScore ===
-            "function"
-        ) {
-
-            resetMatchScore();
-
-        } else {
-
-            updateGameScoreDisplay();
-        }
-
-
-        matchFinished =
-            false;
-
-
-        gameStarted =
-            false;
-
-
-        gameInitialized =
-            false;
-
-
-        betInProgress =
-            false;
-
-
-        resetForNewRound();
-
-
-        hideWaitingOverlay();
-
-
-        if (
-            typeof openMatchConfig ===
-            "function"
-        ) {
-
-            openMatchConfig(
-                "change",
-                data.configurator
-            );
-
-        } else {
-
-            showScreen(
-                lobby
-            );
-        }
-
-
-        return;
-    }
-
-
-    // ======================================
-    // CONFIGURAÇÃO CONFIRMADA PELO SERVIDOR
-    // ======================================
-
-    if (
-        data.type ===
-        "match_config"
-    ) {
-
+        resetRoundVariables();
         matchFinished = false;
-        gameStarted = false;
-        gameInitialized = false;
-        betInProgress = false;
 
-        hideWaitingOverlay();
+        if (data.score) {
+            receiveScoreUpdate(data);
+        }
 
-        openCharacterChoice();
+        return;
+    }
+
+
+    if (data.type === "change_match_config") {
+
+        resetRoundVariables();
+        matchFinished = false;
+
+        if (typeof openMatchConfig === "function") {
+            openMatchConfig();
+        }
 
         return;
     }
@@ -2435,455 +2504,263 @@ function handleGameMessage(data) {
     // TABULEIROS RECEBIDOS
     // ======================================
 
-    if (
-        data.type ===
-        "game_boards"
-    ) {
+    if (data.type === "game_boards") {
 
         receiveGameBoards(
             data.player1,
             data.player2
         );
 
-
-        applyPlayerTheme();
-
-
         return;
     }
-
-
-    // ======================================
-    // APOSTA EM ANDAMENTO
-    // ======================================
-
-    if (
-        data.type ===
-        "bet_in_progress"
-    ) {
-
-        betInProgress =
-            true;
-
-
-        showWaitingOverlay(
-            "O ADVERSÁRIO ESTÁ APOSTANDO...",
-            "Aguarde o outro jogador escolher uma carta para apostar."
-        );
-
-
-        return;
-    }
-
-
-    // ======================================
-    // APOSTA CANCELADA
-    // ======================================
-
-    if (
-        data.type ===
-        "bet_cancelled"
-    ) {
-
-        betInProgress =
-            false;
-
-
-        hideWaitingOverlay();
-
-
-        return;
-    }
-
 
     // ======================================
     // PERSONAGEM DO ADVERSÁRIO
     // ======================================
 
-    if (
-        data.type ===
-        "opponent_character"
-    ) {
+    if (data.type === "opponent_character") {
 
         opponentCharacter =
             data.image;
 
-
         opponentCharacterConfirmed();
-
 
         return;
     }
-
 
     // ======================================
     // OUTRO JOGADOR CONFIRMOU
     // ======================================
 
-    if (
-        data.type ===
-        "character_confirmed"
-    ) {
+    if (data.type === "character_confirmed") {
 
         opponentCharacterConfirmed();
 
-
         return;
     }
-
 
     // ======================================
     // CARTA DO OUTRO JOGADOR
     // ======================================
 
-    if (
-        data.type ===
-        "card_toggle"
-    ) {
+    if (data.type === "card_toggle") {
 
-        return;
-    }
+        // O servidor deve impedir card_toggle durante
+        // uma aposta/troca. O cliente também ignora por segurança.
+        if (gameLocked || replacementActive) {
+            return;
+        }
 
-
-    // ==========================================
-    // ADVERSÁRIO FEZ UMA APOSTA
-    // ==========================================
-
-    if (
-        data.type ===
-        "make_bet"
-    ) {
-
-        hideWaitingOverlay();
-
-
-        openCustomPopup(
-            "O ADVERSÁRIO FEZ UMA APOSTA!",
-            "O outro jogador apostou no personagem abaixo. Clique em REVELAR para conferir a resposta!",
-            [
-                {
-                    text: "REVELAR",
-                    secondary: false,
-                    action: function () {
-
-                        sendGameMessage({
-                            type:
-                                "reveal_bet_result"
-                        });
-                    }
-                }
-            ],
-            data.card_image
+        updateRemoteCard(
+            data.index,
+            data.raised
         );
 
-
         return;
     }
-
 
     // ======================================
-    // RESULTADO DA SUA APOSTA
+    // BLOQUEIO DE APOSTA CONFIRMADO
     // ======================================
 
-    if (
-        data.type ===
-        "bet_result"
-    ) {
+    if (data.type === "bet_started") {
 
-        betInProgress =
-            false;
+        betInProgress = true;
 
-
-        hideWaitingOverlay();
-
-
-        if (data.correct) {
-
-            openCustomPopup(
-                "VOCÊ VENCEU!",
-                "Você descobriu o personagem do adversário!",
-                [
-                    {
-                        text: "OK",
-                        secondary: false,
-                        action: function () {}
-                    }
-                ],
-                data.bet_image
-            );
-
-
-        } else {
-
-            const card =
-                gameCards[data.bet_index];
-
-
-            if (card) {
-
-                card.wrong =
-                    true;
-
-                card.raised =
-                    false;
-            }
-
-
-            const element =
-                document.querySelector(
-                    '#gameBoard .game-card[data-index="' +
-                    data.bet_index +
-                    '"]'
-                );
-
-
-            if (element) {
-
-                element.classList.add(
-                    "wrong-guess",
-                    "flipped"
-                );
-
-
-                element.onclick =
-                    null;
-            }
-
-
-            openCustomPopup(
-                "APOSTA INCORRETA!",
-                "Você errou o personagem do adversário. A carta foi marcada com um X grande e virada. A partida continua!",
-                [
-                    {
-                        text: "CONTINUAR",
-                        secondary: false,
-                        action: function () {}
-                    }
-                ],
-                data.bet_image
-            );
-        }
-
-
-        return;
-    }
-
-
-    // ==========================================
-    // RESULTADO DA APOSTA PARA QUEM RECEBEU
-    // ==========================================
-
-    if (
-        data.type ===
-        "bet_resolved"
-    ) {
-
-        betInProgress =
-            false;
-
-
-        hideWaitingOverlay();
-
-
-        if (data.correct) {
-
-            openCustomPopup(
-                "VOCÊ PERDEU!",
-                "O adversário acertou o seu personagem!",
-                [
-                    {
-                        text: "OK",
-                        secondary: false,
-                        action: function () {}
-                    }
-                ],
-                data.bet_image
-            );
-
-
-        } else {
-
-            openCustomPopup(
-                "ELE ERROU!",
-                "O adversário errou o seu personagem. A partida continua!",
-                [
-                    {
-                        text: "CONTINUAR",
-                        secondary: false,
-                        action: function () {}
-                    }
-                ],
-                data.bet_image
-            );
-        }
-
-
-        return;
-    }
-
-
-    // ==========================================
-    // VENCEU A APOSTA
-    // ==========================================
-
-    if (
-        data.type ===
-        "bet_won"
-    ) {
-
-        betInProgress =
-            false;
-
-
-        // O servidor envia o placar junto com a vitória.
-        // Isso garante que a pontuação seja atualizada
-        // imediatamente no cliente vencedor.
         if (
-            data.score &&
-            typeof updateMatchScore === "function"
+            Number(data.bettor) ===
+            Number(playerNumber)
         ) {
-
-            updateMatchScore(
-                data.score[1] ?? data.score["1"] ?? player1Score,
-                data.score[2] ?? data.score["2"] ?? player2Score
-            );
-
-        } else if (
-            typeof updateMatchScore === "function" &&
-            typeof playerNumber !== "undefined"
-        ) {
-
-            // Compatibilidade com servidor antigo que envia bet_won
-            // sem o placar.
-            if (Number(playerNumber) === 1) {
-                updateMatchScore(player1Score + 1, player2Score);
-            } else {
-                updateMatchScore(player1Score, player2Score + 1);
-            }
+            gameLockReason = "bet";
+            return;
         }
 
-
-        hideWaitingOverlay();
-
-
-        gameCards.forEach(
-            function (card) {
-
-                card.raised =
-                    true;
-
-                card.wrong =
-                    false;
-            }
+        setGameLock(
+            true,
+            "bet",
+            true,
+            "O JOGADOR ESTÁ APOSTANDO",
+            "Aguarde. Você não pode virar cartas ou interferir durante a aposta."
         );
-
-
-        renderGameBoard();
-
 
         if (gameStatus) {
-
             gameStatus.textContent =
-                "VOCÊ ACERTOU!";
+                "O JOGADOR ESTÁ APOSTANDO.";
         }
 
+        return;
+    }
+
+    // ======================================
+    // BLOQUEIO DE APOSTA NEGADO
+    // ======================================
+
+    if (data.type === "bet_lock_denied") {
+
+        betSelectionActive = false;
+        betWaitingResult = false;
+        betInProgress = false;
+
+        disableBetSelection();
 
         openCustomPopup(
-            "VOCÊ VENCEU A RODADA!",
-            "Você descobriu o personagem do adversário. Ele deverá escolher um novo personagem.",
+            "APOSTA INDISPONÍVEL",
+            data.message ||
+                "Não é possível apostar neste momento.",
             [
                 {
-                    text: "CONTINUAR",
+                    text: "OK",
                     secondary: false,
                     action: function () {}
                 }
-            ],
-            data.bet_image
+            ]
         );
-
 
         return;
     }
 
+    // ======================================
+    // APOSTA CANCELADA
+    // ======================================
 
-    // ==========================================
-    // PERDEU A APOSTA
-    // ==========================================
+    if (data.type === "bet_cancelled") {
 
-    if (
-        data.type ===
-        "bet_lost"
-    ) {
+        betSelectionActive = false;
+        betWaitingResult = false;
+        betInProgress = false;
 
-        betInProgress =
-            false;
-
-
-        hideWaitingOverlay();
-
-
-        openCustomPopup(
-            "SEU PERSONAGEM FOI DESCOBERTO!",
-            "Você perdeu esta rodada. Escolha um novo personagem para o adversário descobrir.",
-            [
-                {
-                    text: "ESCOLHER PERSONAGEM",
-                    secondary: false,
-                    action: function () {
-
-                        openCharacterChoice();
-                    }
-                }
-            ],
-            data.bet_image
+        setGameLock(
+            false,
+            null,
+            false
         );
 
-
-        return;
-    }
-
-
-    // ==========================================
-    // NOVA RODADA
-    // ==========================================
-
-    if (
-        data.type ===
-        "new_round_start"
-    ) {
-
-        if (data.opponent_character) {
-
-            opponentCharacter =
-                data.opponent_character;
+        if (gameStatus && gameStarted) {
+            gameStatus.textContent =
+                "ENCONTRE O PERSONAGEM DO ADVERSÁRIO!";
         }
 
+        return;
+    }
 
-        startNewRound();
+    // ======================================
+    // RESULTADO DA APOSTA
+    // ======================================
 
+    if (data.type === "bet_result") {
+
+        betSelectionActive = false;
+        betWaitingResult = false;
+        betInProgress = false;
+
+        // A aposta acabou, mas uma aposta correta inicia
+        // imediatamente a etapa de troca de personagem.
+        if (data.correct) {
+            handleCorrectBet(data);
+        } else {
+            setGameLock(false, null, false);
+            handleWrongBet(data);
+        }
 
         return;
     }
 
+    // ======================================
+    // COMPATIBILIDADE COM EVENTOS ANTIGOS
+    // ======================================
+
+    if (data.type === "bet_correct") {
+
+        handleCorrectBet(data);
+        return;
+    }
+
+    if (data.type === "bet_wrong") {
+
+        setGameLock(false, null, false);
+        handleWrongBet(data);
+        return;
+    }
 
     // ======================================
     // PERSONAGEM REVELADO
     // ======================================
 
-    if (
-        data.type ===
-        "reveal_character"
-    ) {
+    if (data.type === "reveal_character") {
 
         opponentCharacter =
             data.image;
 
-
         revealOpponentCharacter();
-
 
         return;
     }
+
+    // ======================================
+    // INÍCIO DA TROCA DE PERSONAGEM
+    // ======================================
+
+    if (data.type === "character_replacement_started") {
+
+        handleCharacterReplacementStarted(
+            data
+        );
+
+        return;
+    }
+
+    // ======================================
+    // TROCA DE PERSONAGEM CONCLUÍDA
+    // ======================================
+
+    if (data.type === "character_replacement_complete") {
+
+        handleCharacterReplacementComplete(
+            data
+        );
+
+        return;
+    }
+
+    // ======================================
+    // RESET DO TABULEIRO ENVIADO PELO SERVIDOR
+    // ======================================
+
+    if (data.type === "reset_board") {
+
+        resetLocalBoardOnly();
+        return;
+    }
+
+    // ======================================
+    // CÓDIGO SALVO
+    // ======================================
+
+    if (data.type === "game_saved") {
+
+        receiveSavedGameCode(
+            data.code
+        );
+
+        return;
+    }
+}
+
+
+// ==========================================
+// RESET LOCAL SEM AVISAR O SERVIDOR
+// ==========================================
+
+function resetLocalBoardOnly() {
+
+    gameCards.forEach(
+        function (card) {
+            card.raised = true;
+            card.wrong = false;
+        }
+    );
+
+    renderGameBoard();
 }
 
 
@@ -2940,3 +2817,4 @@ function showGameScreen() {
         gameScreen
     );
 }
+
