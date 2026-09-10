@@ -96,10 +96,22 @@
 
         const senderNumber = Number(sender);
 
+        const currentPlayer =
+            Number(
+                typeof playerNumber !== "undefined"
+                    ? playerNumber
+                    : 0
+            );
+
+        const positionClass =
+            senderNumber === currentPlayer
+                ? "mine"
+                : "opponent";
+
         messageElement.className =
             senderNumber === 1
-                ? "chat-message player1"
-                : "chat-message player2";
+                ? `chat-message player1 ${positionClass}`
+                : `chat-message player2 ${positionClass}`;
 
         messageElement.textContent = text;
 

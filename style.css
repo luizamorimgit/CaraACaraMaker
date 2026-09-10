@@ -2686,3 +2686,16 @@ body.dark .chat-message.player2 {
     border-color: rgba(220, 45, 45, 0.5);
     color: #ff8a8a;
 }
+
+
+/* Posicionamento do chat: sempre o jogador atual à direita
+   e o adversário à esquerda. */
+.chat-message.mine {
+    align-self: flex-end;
+    text-align: right;
+}
+
+.chat-message.opponent {
+    align-self: flex-start;
+    text-align: left;
+}

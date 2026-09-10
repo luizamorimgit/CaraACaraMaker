@@ -1788,12 +1788,6 @@ function requestPlayAgain() {
     sendGameMessage({
         type: "play_again"
     });
-
-
-    showWaitingOverlay(
-        "AGUARDANDO",
-        "Aguardando o outro jogador..."
-    );
 }
 
 

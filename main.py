@@ -568,29 +568,8 @@ async def websocket_endpoint(
                 # O CRIADOR SOLICITA NOVA PARTIDA
                 # ==================================
 
-                room.setdefault(
-                    "play_again_ready",
-                    {1: False, 2: False}
-                )
-
-                room["play_again_ready"][player_number] = True
-
-                ready = room["play_again_ready"]
-
-                if not (
-                    ready.get(1, False)
-                    and ready.get(2, False)
-                ):
-
-                    await websocket.send_json({
-                        "type": "play_again_waiting"
-                    })
-
-                    continue
-
-
                 # ==================================
-                # OS DOIS CONFIRMARAM
+                # J1 INICIA IMEDIATAMENTE
                 # ==================================
 
                 room["play_again_ready"] = {
@@ -613,7 +592,7 @@ async def websocket_endpoint(
 
 
                 print(
-                    "NOVA PARTIDA CONFIRMADA PELOS DOIS JOGADORES."
+                    "NOVA PARTIDA INICIADA PELO CRIADOR (J1)."
                 )
 
 
