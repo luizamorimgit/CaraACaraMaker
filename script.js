@@ -247,6 +247,10 @@ function openMatchConfig(
     controller = null
 ) {
 
+    if (typeof hideWaitingOverlay === "function") {
+        hideWaitingOverlay();
+    }
+
     matchConfigMode =
         mode === "change"
             ? "change"
@@ -1393,6 +1397,11 @@ function handleServerMessage(data) {
         updateWinsSelector();
 
 
+        if (typeof hideWaitingOverlay === "function") {
+            hideWaitingOverlay();
+        }
+
+
         console.log(
             "Partida configurada para:",
             winsToFinish,
@@ -1602,7 +1611,18 @@ function handleServerMessage(data) {
 
 
         waitingMessage.textContent =
-            "AGUARDANDO OUTRO JOGADOR...";
+            "JOGADOR " +
+            leavingPlayer +
+            " SAIU DA SALA.";
+
+
+        if (typeof hideWaitingOverlay === "function") {
+            hideWaitingOverlay();
+        }
+
+        if (typeof closePopup === "function") {
+            closePopup();
+        }
 
 
         if (
@@ -1649,7 +1669,7 @@ function handleServerMessage(data) {
             "JOGADOR SAIU",
             "JOGADOR " +
             leavingPlayer +
-            " SAIU DA SALA.",
+            " SAIU DA SALA.\n\nVOCÊ NÃO FICARÁ PRESO NESTA TELA.",
             null,
             "OK"
         );

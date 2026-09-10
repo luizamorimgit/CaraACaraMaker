@@ -1613,32 +1613,7 @@ function handleMatchWon(data) {
     }
 
 
-    matchFinished =
-        true;
-
-
-    gameStarted =
-        false;
-
-
-    betInProgress =
-        false;
-
-
-    hideWaitingOverlay();
-
-
-    if (
-        data.score &&
-        typeof updateMatchScore === "function"
-    ) {
-
-        updateMatchScore(
-            data.score[1] ?? data.score["1"] ?? 0,
-            data.score[2] ?? data.score["2"] ?? 0
-        );
-    }
-
+    matchFinished = true;
 
     const winner =
         Number(data.winner);
@@ -1659,22 +1634,11 @@ function handleMatchWon(data) {
                 "VOCÊ VENCEU A PARTIDA!";
         }
 
-        // Somente o criador da sala (J1) controla o que acontece depois.
-        if (Number(playerNumber) === 1) {
-
-            openMatchFinishedPopup(
-                "VOCÊ VENCEU!",
-                "Parabéns! Você venceu a partida."
-            );
-
-        } else {
-
-            openMatchResultPopup(
-                "VOCÊ VENCEU!",
-                "Parabéns! Você venceu a partida.",
-                true
-            );
-        }
+        openMatchFinishedPopup(
+            "VOCÊ VENCEU!",
+            "Parabéns!\nVocê venceu a partida.",
+            Number(playerNumber) === 1
+        );
 
     } else {
 
@@ -1684,47 +1648,12 @@ function handleMatchWon(data) {
                 "O ADVERSÁRIO VENCEU A PARTIDA.";
         }
 
-        // O J2 não pode escolher jogar novamente, mudar vitórias ou sair
-        // pelo popup final. Ele apenas aguarda o criador (J1).
-        if (Number(playerNumber) === 1) {
-
-            openMatchFinishedPopup(
-                "VOCÊ PERDEU",
-                "O adversário venceu a partida."
-            );
-
-        } else {
-
-            openMatchResultPopup(
-                "VOCÊ PERDEU",
-                "O adversário venceu a partida.",
-                false
-            );
-        }
+        openMatchFinishedPopup(
+            "VOCÊ PERDEU",
+            "O adversário venceu a partida.",
+            Number(playerNumber) === 1
+        );
     }
-}
-
-
-// ==========================================
-// RESULTADO DA PARTIDA PARA O J2
-// ==========================================
-
-function openMatchResultPopup(
-    title,
-    message,
-    won
-) {
-
-    openCustomPopup(
-        title,
-        message +
-        " Placar final: " +
-        player1Score +
-        " × " +
-        player2Score +
-        ". Aguardando o criador da sala decidir o próximo passo...",
-        []
-    );
 }
 
 
@@ -1734,18 +1663,23 @@ function openMatchResultPopup(
 
 function openMatchFinishedPopup(
     title,
-    message
+    message,
+    creatorControls = false
 ) {
 
-    openCustomPopup(
-        title,
+    const finalMessage =
         message +
         "\nPlacar final: " +
         player1Score +
         " × " +
         player2Score +
-        ".",
-        [
+        ".";
+
+    const buttons = [];
+
+    if (creatorControls) {
+
+        buttons.push(
             {
                 text: "JOGAR NOVAMENTE",
                 secondary: false,
@@ -1770,7 +1704,22 @@ function openMatchFinishedPopup(
                     leaveGame();
                 }
             }
-        ]
+        );
+
+    } else {
+
+        buttons.push({
+            text: "AGUARDANDO O CRIADOR...",
+            secondary: true,
+            action: function () {}
+        });
+    }
+
+
+    openCustomPopup(
+        title,
+        finalMessage,
+        buttons
     );
 }
 
@@ -1788,6 +1737,12 @@ function requestPlayAgain() {
     sendGameMessage({
         type: "play_again"
     });
+
+
+    showWaitingOverlay(
+        "AGUARDANDO",
+        "Aguardando o outro jogador..."
+    );
 }
 
 
@@ -2101,6 +2056,10 @@ function openCustomPopup(
     popupMessage.textContent =
         message;
 
+    // Permite que mensagens do popup usem quebras de linha.
+    popupMessage.style.whiteSpace =
+        "pre-line";
+
 
     popupActions.innerHTML =
         "";
@@ -2371,10 +2330,10 @@ function handleGameMessage(data) {
             false;
 
 
+        resetForNewRound();
+
+
         hideWaitingOverlay();
-
-
-        closePopup();
 
 
         openCharacterChoice();
@@ -2420,6 +2379,9 @@ function handleGameMessage(data) {
 
         betInProgress =
             false;
+
+
+        resetForNewRound();
 
 
         hideWaitingOverlay();
