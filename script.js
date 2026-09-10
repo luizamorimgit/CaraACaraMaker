@@ -263,28 +263,7 @@ function openMatchConfig(
 
     matchConfigConfirmed = false;
 
-    document
-        .querySelectorAll(".wins-option")
-        .forEach(
-            function (button) {
-
-                button.classList.remove(
-                    "active",
-                    "selected"
-                );
-
-                if (
-                    Number(button.dataset.wins) ===
-                    Number(winsToFinish)
-                ) {
-
-                    button.classList.add(
-                        "active",
-                        "selected"
-                    );
-                }
-            }
-        );
+    updateWinsSelector();
 
     const createButton =
         document.getElementById(
@@ -377,53 +356,118 @@ function confirmMatchConfig() {
 // ESCOLHER QUANTIDADE DE VITÓRIAS
 // ==========================================
 
-document.addEventListener(
-    "click",
-    function (event) {
+const MATCH_WINS_OPTIONS = [
+    1,
+    2,
+    3,
+    5,
+    7
+];
 
-        const button =
-            event.target.closest(
-                ".wins-option"
-            );
 
-        if (!button) {
-            return;
-        }
+function updateWinsSelector() {
 
-        const value =
-            Number(
-                button.dataset.wins
-            );
-
-        if (
-            ![1, 3, 5, 10].includes(
-                value
-            )
-        ) {
-            return;
-        }
-
-        winsToFinish =
-            value;
-
-        document
-            .querySelectorAll(".wins-option")
-            .forEach(
-                function (item) {
-
-                    item.classList.remove(
-                        "active",
-                        "selected"
-                    );
-                }
-            );
-
-        button.classList.add(
-            "active",
-            "selected"
+    const valueElement =
+        document.getElementById(
+            "winsValue"
         );
+
+    const decreaseButton =
+        document.getElementById(
+            "winsDecrease"
+        );
+
+    const increaseButton =
+        document.getElementById(
+            "winsIncrease"
+        );
+
+    const currentIndex =
+        MATCH_WINS_OPTIONS.indexOf(
+            Number(winsToFinish)
+        );
+
+    if (valueElement) {
+
+        valueElement.textContent =
+            winsToFinish;
+    }
+
+    if (decreaseButton) {
+
+        decreaseButton.disabled =
+            currentIndex <= 0;
+    }
+
+    if (increaseButton) {
+
+        increaseButton.disabled =
+            currentIndex >=
+            MATCH_WINS_OPTIONS.length - 1;
+    }
+}
+
+
+function changeWins(direction) {
+
+    const currentIndex =
+        MATCH_WINS_OPTIONS.indexOf(
+            Number(winsToFinish)
+        );
+
+    if (currentIndex === -1) {
+
+        winsToFinish = 1;
+        updateWinsSelector();
+
+        return;
+    }
+
+    const nextIndex =
+        currentIndex + direction;
+
+    if (
+        nextIndex < 0 ||
+        nextIndex >= MATCH_WINS_OPTIONS.length
+    ) {
+        return;
+    }
+
+    winsToFinish =
+        MATCH_WINS_OPTIONS[nextIndex];
+
+    updateWinsSelector();
+}
+
+
+const winsDecreaseButton =
+    document.getElementById(
+        "winsDecrease"
+    );
+
+const winsIncreaseButton =
+    document.getElementById(
+        "winsIncrease"
+    );
+
+
+winsDecreaseButton?.addEventListener(
+    "click",
+    function () {
+        changeWins(-1);
     }
 );
+
+
+winsIncreaseButton?.addEventListener(
+    "click",
+    function () {
+        changeWins(1);
+    }
+);
+
+
+updateWinsSelector();
 
 
 // ==========================================
@@ -1070,7 +1114,7 @@ function connectToRoom(
             ) {
 
                 const validWins =
-                    [1, 3, 5, 10];
+                    MATCH_WINS_OPTIONS;
 
 
                 if (
@@ -1323,7 +1367,7 @@ function handleServerMessage(data) {
 
 
         if (
-            [1, 3, 5, 10].includes(
+            MATCH_WINS_OPTIONS.includes(
                 configuredWins
             )
         ) {
@@ -1347,6 +1391,9 @@ function handleServerMessage(data) {
         }
 
 
+        updateWinsSelector();
+
+
         console.log(
             "Partida configurada para:",
             winsToFinish,
@@ -1355,10 +1402,6 @@ function handleServerMessage(data) {
 
 
         if (matchConfigMode === "change") {
-
-            matchConfigMode = "create";
-            matchConfigController = null;
-            matchConfigConfirmed = false;
 
             if (typeof handleGameMessage === "function") {
                 handleGameMessage(data);
@@ -1403,9 +1446,11 @@ function handleServerMessage(data) {
             );
         }
 
-        // Não usamos return aqui.
-        // jogo.js também precisa receber
-        // essa mensagem.
+        if (typeof handleGameMessage === "function") {
+            handleGameMessage(data);
+        }
+
+        return;
     }
 
 
@@ -1429,9 +1474,11 @@ function handleServerMessage(data) {
                 player2Score
         );
 
-        // Não mostramos popup aqui.
-        // jogo.js será responsável pela tela
-        // final de vitória/derrota.
+        if (typeof handleGameMessage === "function") {
+            handleGameMessage(data);
+        }
+
+        return;
     }
 
 
@@ -2049,6 +2096,9 @@ function leaveRoom() {
 
     winsToFinish =
         1;
+
+
+    updateWinsSelector();
 
 
     resetMatchScore();

@@ -2002,19 +2002,24 @@ body.dark .game-credits {
 ========================================================= */
 
 .match-config-options {
-    width: min(90vw, 420px);
+    width: min(90%, 420px);
 
     display: grid;
 
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: 72px 1fr 72px;
 
-    gap: 12px;
+    align-items: center;
+
+    gap: 14px;
 
     margin-bottom: 25px;
 }
 
 .wins-option {
-    padding: 18px 12px;
+    padding: 0;
+
+    width: 72px;
+    height: 60px;
 
     border: 2px solid #555555;
     border-radius: 18px;
@@ -2024,7 +2029,7 @@ body.dark .game-credits {
 
     font-family: inherit;
 
-    font-size: 1rem;
+    font-size: 1.8rem;
     font-weight: 600;
 
     cursor: pointer;
@@ -2032,29 +2037,36 @@ body.dark .game-credits {
     transition:
         transform 0.2s ease,
         background 0.2s ease,
-        border-color 0.2s ease;
+        border-color 0.2s ease,
+        opacity 0.2s ease;
 }
 
-.wins-option:active {
-    transform: scale(0.96);
+.wins-option:active:not(:disabled) {
+    transform: scale(0.94);
 }
 
-.wins-option.selected {
-    border-color: #0057ff;
+.wins-option:disabled {
+    opacity: 0.35;
 
-    background:
-        rgba(0, 87, 255, 0.10);
+    cursor: not-allowed;
+}
 
-    box-shadow:
-        0 0 0 3px
-        rgba(0, 87, 255, 0.15);
+.wins-value {
+    min-width: 0;
+
+    text-align: center;
+
+    font-size: 2.2rem;
+    font-weight: 700;
+
+    line-height: 1;
 }
 
 
-/* Botão criar da configuração */
+/* Botão criar usa exatamente a largura do bloco de botões */
 
 #matchConfig button[onclick="confirmMatchConfig()"] {
-    width: min(90vw, 420px);
+    width: 100%;
 
     padding: 18px;
 
@@ -2585,13 +2597,20 @@ body.dark .match-final-score {
 @media (max-width: 500px) {
 
     .match-config-options {
-        width: min(94vw, 420px);
+        width: min(94%, 420px);
 
-        gap: 9px;
+        grid-template-columns: 60px 1fr 60px;
+
+        gap: 10px;
     }
 
     .wins-option {
-        padding: 16px 10px;
+        width: 60px;
+        height: 56px;
+    }
+
+    .wins-value {
+        font-size: 2rem;
     }
 
     .game-score {

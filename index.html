@@ -169,37 +169,30 @@
 
         <button
             type="button"
-            class="wins-option active"
-            data-wins="1"
+            id="winsDecrease"
+            class="wins-option wins-control"
+            aria-label="Diminuir vitórias"
+        >
+            −
+        </button>
+
+
+        <div
+            id="winsValue"
+            class="wins-value"
+            aria-live="polite"
         >
             1
-        </button>
+        </div>
 
 
         <button
             type="button"
-            class="wins-option"
-            data-wins="3"
+            id="winsIncrease"
+            class="wins-option wins-control"
+            aria-label="Aumentar vitórias"
         >
-            3
-        </button>
-
-
-        <button
-            type="button"
-            class="wins-option"
-            data-wins="5"
-        >
-            5
-        </button>
-
-
-        <button
-            type="button"
-            class="wins-option"
-            data-wins="10"
-        >
-            10
+            +
         </button>
 
     </div>
@@ -904,9 +897,22 @@
 
 if ("serviceWorker" in navigator) {
 
-    window.addEventListener("load", () => {
+    window.addEventListener("load", async () => {
 
-        navigator.serviceWorker.register("./sw.js");
+        try {
+
+            const registration =
+                await navigator.serviceWorker.register("./sw.js");
+
+            await registration.update();
+
+        } catch (error) {
+
+            console.error(
+                "Erro ao atualizar o Service Worker:",
+                error
+            );
+        }
 
     });
 

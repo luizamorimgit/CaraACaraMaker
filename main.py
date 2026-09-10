@@ -444,9 +444,10 @@ async def websocket_endpoint(
 
                 if wins_to_finish not in (
                     1,
+                    2,
                     3,
                     5,
-                    10
+                    7
                 ):
 
                     continue
